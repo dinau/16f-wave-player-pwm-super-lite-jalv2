@@ -1,0 +1,81 @@
+--  Copyright (C) 2017, avrin, http://mpu.seesaa.net
+--  This program is licensed under BSD license.
+--  Please refer to "LICENSE.txt".
+
+-- Tick timer is Timer1(16bit)
+alias TMR1IF_bit is PIR1_TMR1IF
+alias TMR1IE_bit is PIE1_TMR1IE
+if defined(T1CON_CS) then
+    alias TMR1CS_bit is T1CON_CS
+else
+    alias TMR1CS_bit is T1CON_TMR1CS
+end if
+if defined(T1CON_CKPS) then
+    alias T1CKPS_bit is T1CON_CKPS
+else
+    alias T1CKPS_bit is T1CON_T1CKPS
+end if
+alias TICK_TMR   is TMR1
+alias TMR1ON_bit is T1CON_TMR1ON
+
+if false then
+    -- not used, Timer0
+    alias TMR0IE_bit is INTCON_TMR0IE
+    alias TMR0IF_bit is INTCON_TMR0IF
+    alias TMR0CS_bit is OPTION_REG_TMR0CS
+    alias PSA_bit    is OPTION_REG_PSA
+end if
+
+const dword TICK_TIMER_HZ = 100; // 10msec base
+const dword PRESCALER_VAL =   8; // must be synchronize timer initialize
+const word  TICK_TIMER_RELOAD_VALUE = 0xFFFF - word(( target_clock / ( dword(4) * PRESCALER_VAL * TICK_TIMER_HZ ) ))
+
+
+function isTickTimer_IE()  return bit is
+    pragma inline
+    return TMR1IE_bit
+end function
+
+function isTickTimer_IF()  return bit is
+    pragma inline
+    return TMR1IF_bit
+end function
+
+procedure tickTimer_IF_clear() is
+    pragma inline
+    TMR1IF_bit = 0
+end procedure
+
+procedure tickTimer_intr_enable() is
+    pragma inline
+    TMR1IE_bit = 1
+end procedure
+
+procedure tickTimer_intr_disable() is
+    pragma inline
+    TMR1IE_bit = 0
+end procedure
+
+procedure tickTimer_stop() is
+    pragma inline
+    TMR1ON_bit= 0;
+end procedure
+
+procedure tickTimer_reload() is
+    pragma inline
+    TICK_TMR = TICK_TIMER_RELOAD_VALUE
+end procedure
+
+-- /******************
+--  init_tickTimer
+-- *******************/
+procedure init_ticKTimer() is
+    pragma inline
+    ; Use Timer1 for system ticks (10msec interval)
+    ; Clock source is Internal Fosc/4, use default setting
+    T1CKPS_bit= 0b11;                    set prescaler 1/8
+    tickTimer_reload();
+    TMR1ON_bit= 1;                       tickTimer start
+end procedure
+
+

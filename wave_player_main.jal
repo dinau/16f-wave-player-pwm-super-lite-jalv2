@@ -1,0 +1,257 @@
+--  Copyright (C) 2017,2019 avrin, http://mpu.seesaa.net
+--  This program is licensed under BSD license.
+--  Please refer to "LICENSE.txt".
+--
+
+-- btn: meaning Button switch
+--
+
+-- /******************
+--  Varialble definitions
+-- *******************/
+const byte LED_PERIOD_PLAYNG   = 75 ; [ * 10 msec]
+const byte LED_PERIOD_PAUSING  = 10 ; [ * 10 msec]
+var dword gdwSongFileSectors   = 0  ; set to 0 for  auto start music
+var word   gwReadCount
+if CH_MODE_STEREO then
+    const word wREAD_COUNT = 256      ; (512/2)
+    const byte bHEADER_COUNT = 44/2
+else
+    const word wREAD_COUNT = 256*2
+    const byte bHEADER_COUNT = 44
+end if
+
+-- /******************
+--  period_intr for PWM
+-- *******************/
+procedure period_intr() is
+    pragma interrupt
+    var byte datL,datR
+    if isPeriodTimer_IF() then
+        if TEST_PORT_ENABLE then
+            test_port =1
+        end if
+
+        datL = send_ff()
+        if CH_MODE_STEREO then
+            datR = send_ff()
+        end if
+        if CH_MODE_STEREO & defined(pwm_r_duty_fast) then ; normal route
+            pwm_l_duty_fast(datL)
+            pwm_r_duty_fast(datR)
+        else
+            var byte bDmono
+            ;bDmono = byte( (word(datL) + datR)>>1 )
+            pwm_l_duty_fast(datL)
+        end if
+        gwReadCount = gwReadCount - 1
+
+        ; check 512byte sector boundery
+        if gwReadCount == 0 then
+            ; end 1 sector
+            datL = send_ff() ; dummy read. discard CRC
+            datL = send_ff()
+            while send_ff() != 0xFE loop end loop
+            gwReadCount = wREAD_COUNT
+            gdwSongFileSectors = gdwSongFileSectors - 1
+        end if
+
+        ; end interrupt
+        periodTimer_IF_clear()
+
+        if TEST_PORT_ENABLE then
+            test_port =0
+        end if
+    end if ; isPeriodTimer_IF()
+end procedure
+
+-- /******************
+--  wave_player_main
+-- *******************/
+procedure wave_player_main() is
+    pragma inline
+    var word wBtnLowCount = 0
+    if HAVE_LED_IND_BLINK then
+        var byte bTimeout_led = 0
+    end if
+    var bit  btn_bit_prev = true ,btn_short_on  = false
+    var bit  btn_long_on  = false
+    if HAVE_POWER_OFF_MODE then
+        btn_long_on2  = false
+        alias btn_power_off_on  is btn_long_on2
+    end if
+    var bit  btn_pause_prev = false
+    alias fPlaying          is TMR2IE_bit
+    alias btn_next_song_on  is btn_short_on
+    alias btn_pause_on      is btn_long_on
+
+    gwReadCount = wREAD_COUNT
+
+    if HAVE_LED_IND_PWM then ; pseudo PWM setting
+        const sbyte IND_PERIOD         = 125
+        const sbyte IND_DUTY_LOW_SPEED = 1
+        const sbyte IND_DUTY_HI_SPEED  = 3
+        var sbyte   sbIndDuty    = 0
+        var sbyte   sbIndCurrPos = 0
+        var sbyte   sbIndSpeed   = IND_DUTY_LOW_SPEED
+        var sbyte   sbIndDelta   = sbIndSpeed
+    end if
+
+    forever loop
+        ; wait 10msec Ticker flag
+        while !isTickTimer_IF() loop
+            if gdwSongFileSectors == 0  then  ; found end of file
+                exit loop                     ; promptly exit and prepare next song
+            end if
+
+            if HAVE_LED_IND_PWM then
+                ---------------------
+                -- pseudo PWM for LED
+                ---------------------
+                if sbIndCurrPos < sbIndDuty then
+                    led = 1
+                else
+                    led = 0
+                end if
+                sbIndCurrPos = sbIndCurrPos + 1
+                if sbIndCurrPos == IND_PERIOD then
+                    sbIndCurrPos = 0
+                end if
+            end if
+        end loop
+
+        -------------------
+        tickTimer_IF_clear()
+        tickTimer_reload()
+        -------------------
+
+        -------------------
+        -- Go to sleep mode (== Power off)
+        -------------------
+        ;include power_off_mode
+
+        -------------------
+        --- Next song and start
+        -------------------
+        if ( gdwSongFileSectors == 0 ) | btn_next_song_on then
+            pwm_period_timer_stop()
+            btn_next_song_on = false
+            sd_stop_read()
+
+            -------------------
+            --- Search next song
+            -------------------
+            searchNextFile()
+            ;# Seek to Target file sector
+            sd_start_read( gdwTargetFileSector )
+
+            ; delete about last 30Kbyte to cut tag data in *.wav file
+            gdwSongFileSectors = dword( (gdwBPB_FileSize - CUT_LAST_TAG_NOISE) )>>9 ; /512 , change to sector
+
+            -------------------
+            --- skip WAV header size
+            -------------------
+            sd_read_pulse_byte(44) ;
+
+            -------------------
+            --- music start
+            -------------------
+            gwReadCount = wREAD_COUNT - bHEADER_COUNT
+            pwm_period_timer_start()
+        end if
+
+        -------------------
+        --- LED indicator 1  --- pseudo PWM
+        -------------------
+        if HAVE_LED_IND_PWM & !defined(PIN8_MCU) then
+            sbIndDuty = sbIndDuty + sbIndDelta
+            if sbIndDuty > IND_PERIOD then
+                sbIndDelta = -1 * sbIndSpeed
+            end if
+            if sbIndDuty == 0 then
+                sbIndDelta = sbIndSpeed
+            end if
+            if fPlaying then
+                sbIndSpeed = IND_DUTY_LOW_SPEED
+            else
+                sbIndSpeed = IND_DUTY_HI_SPEED
+            end if
+        end if
+
+        -------------------
+        --- LED indicator 2 --- simple ON/OFF
+        -------------------
+        if defined(HAVE_LED_IND_BLINK) & !defined(PIN8_MCU) then
+            if HAVE_LED_IND_BLINK then
+                if bTimeout_led == 0 then
+                    if fPlaying then
+                        bTimeout_led = LED_PERIOD_PLAYNG       ; during Playing, on/off
+                        led = !led
+                    else
+                        if HAVE_LED_PAUSE_INDICATOR then
+                            bTimeout_led = LED_PERIOD_PAUSING  ; during Pause,   on/off
+                            led = !led
+                        else
+                            bTimeout_led = 1
+                            led = 0
+                        end if
+                    end if
+                end if
+                bTimeout_led = bTimeout_led - 1
+            end if
+        end if
+
+        -------------------
+        --- button sw input
+        -------------------
+        if HAVE_BUTTON_SW then
+            -- Using this push switch
+            -- http://akizukidenshi.com/catalog/g/gP-01282/
+            --
+            var bit btn = btn_bit_now
+            if btn_bit_prev ^ btn  then
+                if btn then ; 0 --> 1: btn released
+                    if (wBtnLowCount > 10) & (wBtnLowCount < 130) then ; 100msec < x < 1.3sec
+                        btn_short_on = true
+                    end if
+                    wBtnLowCount = 0
+                end if
+            end if
+            btn_bit_prev = btn
+            if btn == false then
+                wBtnLowCount = wBtnLowCount + 1
+            end if
+            if  (wBtnLowCount > 120) then  ; 1.2sec >
+                ; recognized pause on
+                btn_long_on = true
+            end if
+            if HAVE_POWER_OFF_MODE then
+                if (wBtnLowCount > 400) then  ; 4sec >
+                    ; "long on2" is meaning go to sleep mode
+                    btn_long_on2 = true;
+                end if
+            end if
+            -------------------
+            -- Pause release
+            -------------------
+            if btn_next_song_on then
+                if !fPlaying then          ; if during pause
+                    fPlaying         = true; release pause
+                    btn_next_song_on = false
+                    btn_pause_on     = false
+                end if
+            end if
+            -------------------
+            --- Pause enter
+            -------------------
+            if btn_pause_prev ^ btn_pause_on then
+                if btn_pause_on then
+                    fPlaying = false
+                end if
+            end if
+            btn_pause_prev = btn_pause_on
+        end if
+    end loop ; [forever loop end]
+
+end procedure
+

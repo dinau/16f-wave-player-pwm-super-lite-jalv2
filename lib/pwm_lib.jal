@@ -1,0 +1,148 @@
+--  Copyright (C) 2017, avrin, http://mpu.seesaa.net
+--  This program is licensed under BSD license.
+--  Please refer to "LICENSE.txt".
+
+; PWM period timer is Timer2
+
+--------------
+-- definitions
+--------------
+alias periodTimerStart   is TMR2ON_bit
+
+------------------------------------------
+--                 Stereo                         |   Mono
+--              Left   Right                      |   ----
+-- Pattern1     CCP1    CCP2                      |   CCP1
+-- Pattern2     CCP3    CCP4                      |   CCP3
+-- Pattern3     CCP1    PWM3   PIC16F1764         |
+-- Pattern4     PWM1    PWM2   PIC16F1455         |
+-- Pattern5     PWM3    PWM4   PIC16F1619 (1)     |
+
+-- (1) Selectable
+-------------------------------------------
+
+
+-- /******************
+--  periodTimer_IF_clear
+-- *******************/
+procedure periodTimer_IF_clear() is
+    pragma inline
+    TMR2IF_bit = 0
+end procedure
+
+-- /******************
+--  isPeriodTimer_IF
+-- *******************/
+function isPeriodTimer_IF() return bit is
+    pragma inline
+    return TMR2IF_bit
+end function
+
+-- /******************
+--  pwm_l_duty_fast
+-- *******************/
+procedure pwm_l_duty_fast(byte in duty) is
+    pragma inline
+    if defined(pwm_l_duty_lower_bits) then
+        if defined(PWM_DUTY_REG_LEFT_TYPE2) then   ; for PIC_16F18313 etc.
+            if PWM_DUTY_REG_LEFT_TYPE2 then
+                pwm_l_duty_lower_bits = duty
+            else
+                _ERROR "Selection of option"
+            end if
+        else
+            pwm_l_duty_lower_bits = duty
+            pwm_l_duty_upper_bits = duty >> 2
+        end if
+    end if
+end procedure
+
+-- /******************
+--  pwm_l_duty
+-- *******************/
+procedure pwm_l_duty(byte in duty) is
+    if defined(pwm_l_duty_lower_bits) then
+        if defined(PWM_DUTY_REG_LEFT_TYPE2) then   ; for PIC_16F18313 etc.
+            if PWM_DUTY_REG_LEFT_TYPE2 then
+                pwm_l_duty_lower_bits = duty            ; FMT bit must be 0. (CCPxCon.CCPxFMT)
+            else
+                _ERROR "Selection of option"
+            end if
+        else
+            pwm_l_duty_lower_bits = duty
+            pwm_l_duty_upper_bits = duty >> 2
+        end if
+    end if
+end procedure
+
+-- /******************
+--  pwm_r_duty_fast
+-- *******************/
+if defined(pwm_r_duty_lower_bits) then
+    procedure pwm_r_duty_fast(byte in duty) is
+        pragma inline
+        if defined(PWM_DUTY_REG_RIGHT_TYPE2) then   ; for PIC_16F18313 etc.
+            if PWM_DUTY_REG_RIGHT_TYPE2 then
+                pwm_r_duty_lower_bits = duty
+            else
+                _ERROR "Selection of option"
+            end if
+        else
+            pwm_r_duty_lower_bits = duty
+            pwm_r_duty_upper_bits = duty >> 2
+        end if
+    end procedure
+
+    -- /******************
+    --  pwm_r_duty
+    -- *******************/
+    procedure pwm_r_duty(byte in duty) is
+        if defined(PWM_DUTY_REG_RIGHT_TYPE2) then   ; for PIC_16F18313 etc.
+            if PWM_DUTY_REG_RIGHT_TYPE2 then
+                pwm_r_duty_lower_bits = duty
+            else
+                _ERROR "Selection of option"
+            end if
+        else
+            pwm_r_duty_lower_bits = duty
+            pwm_r_duty_upper_bits = duty >> 2
+        end if
+    end procedure
+end if
+
+-- /******************
+--  pwm_start
+-- *******************/
+procedure pwm_period_timer_start() is
+    periodTimerStart  = true;
+    TMR2IF_bit = 0
+    ; wait stable PWM timer
+    while TMR2IF_bit loop end loop
+    TMR2IF_bit = 0
+    TMR2IE_bit = 1
+end procedure
+
+-- /******************
+--  pwm_stop
+-- *******************/
+procedure pwm_period_timer_stop() is
+    pragma inline
+    TMR2IE_bit  = 0
+    periodTimerStart  = false;
+    TMR2IF_bit  = 0
+end procedure
+
+-- /******************
+--  pwm_init
+-- *******************/
+procedure pwm_init() is
+    pragma inline
+    if defined(PR2) then
+        PR2     =  SAMPLING_FREQ
+    else
+        T2PR    =  SAMPLING_FREQ
+    end if
+
+end procedure
+
+

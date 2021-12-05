@@ -1,0 +1,22 @@
+function toAscii( byte in dat)  return byte is
+    pragma inline
+    if  dat >= 10 then
+         return (dat-10)  |  0x40
+    else
+         return dat | 0x30
+    end if
+end function
+
+procedure hexout(byte in dat ) is
+    pragma inline
+    var byte tmp
+    while !TXSTA_TRMT loop end loop
+    TXREG = 0x20
+    while !TXSTA_TRMT loop end loop
+    TXREG = toAscii( dat>>4)
+    while !TXSTA_TRMT loop end loop
+    TXREG = toAscii(dat & 0x0F)
+end procedure
+
+
+

@@ -1,0 +1,297 @@
+--  Copyright (C) 2017, avrin, http://mpu.seesaa.net
+--  This program is licensed under BSD license.
+--  Please refer to "LICENSE.txt".
+
+-- /* SD card Interface connection
+--  *           :  aitendo   :  General
+--  *  MCU sig. : IFB-254-SD :  PIN name
+--      ---     :    1       :   9 dat2
+--        CS    :    2       :   1 cs/dat3
+--       MOSI   :    3       :   2 di/cmd
+--        GND   :    4       :   3 vss1
+--        VCC   :    5       :   4 vdd
+--        CLK   :    6       :   5 clk
+--        GND   :    7       :   6 vss2
+--       MISO   :    8       :   7 do/dat0
+--        ---   :    9       :   8 dat1
+--        ---   :   10       :  11 wp
+--        ---   :   11       :  10 cd1
+--        ---   :   12       :  - case GND
+-- */
+
+-- /* SD card pin
+-- Pin side
+-- --------------\
+--         9     = \    DAT2/NC
+--             1 ===|   CS/DAT3    [CS]
+--             2 ===|   CMD/DI     [DI]
+--             3 ===|   VSS1
+-- Bottom      4 ===|   VDD
+-- View        5 ===|   CLK        [CLK]
+--             6 ===|   VSS2
+--             7 ===|   DO/DAT0    [DO]
+--         8       =|   DAT1/IRQ
+-- -----------------
+--
+--                                         Arduino      NUCLEO-F411       NUCLEO-F030R8
+-- Logo side
+-- -----------------
+--         8       =|   DAT1/IRQ
+--             7 ===|   DO/DAT0    [DO]     D12           D12/PA_6           D5/PB_4
+--             6 ===|   VSS2
+-- Top         5 ===|   CLK        [CLK]    D13           D13/PA_5           D3/PB_3
+-- View        4 ===|   VDD
+--             3 ===|   VSS1
+--             2 ===|   CMD/DI     [DI]     D11           D11/PA_7           D4/PB_5
+--             1 ===|   CS/DAT3    [CS]     D8            D10/PB_6           D10/PB_6
+--         9     = /    DAT2/NC
+-- --------------/
+-- */
+
+-- ------------------
+-- Pickit3 pin map
+-- ------------------
+-- -----------
+--            \
+--             \
+--          --> |1 Vpp/MCLR
+--              |2 VDD Target
+--              |3 Vss ground
+--              |4 ICSPDAT/PGD
+--              |5 ICSPCLK/PGC
+--              |6 Aux N.C.
+--              /
+--             /
+-- ------------
+--
+-- /*                   PIC12F1840   4KW/256B
+--                      PIC16F18313  2KW/256B
+--                       ---__----
+--           3.3V--- VDD|1       8|VSS --- GND
+--      PWM CCP1 --- RA5|2       7|RA0 --- [PGD] - SPI SDO
+--         SD CS --- RA4|3       6|RA1 --- [PGC] - SPI SCK
+--    SW --- [/MCLR]/RA3|4       5|RA2 --- SPI SDI
+--                       ---------
+-- */
+-- /*                   PIC16F1454 8KW/1024B
+--                      PIC16F1455 8KW/1024B
+--                       ---__----
+--           3.3V--- VDD|1      14|VSS --- GND
+--           LED --- RA5|2      13|RA0 --- (Input only port)
+--         SD CS --- RA4|3      12|RA1 --- UART RX
+--btn SW --- [/MCLR]/RA3|4      11|VUSB3V3
+--   PWM(L) PWM1 --- RC5|5      10|RC0 --- [PGD] SPI SCK    --- Pickit3
+--     (UART TX) --- RC4|6       9|RC1 --- [PGC] SPI SDI    --- Needs 47K ohm external pull-up
+--   PWM(R) PWM2 --- RC3|7       8|RC2 --- SPI SDO
+--                       ---------
+-- */
+-- /*                   PIC16F1705  8KW/1024B
+--                      PIC16F1764  4KW/ 512B [CCP2 -> PWM3]
+--                      PIC16F1825  8KW/1024B
+--                      PIC16F18325 8KW/1024B
+--                       ---__----
+--           3.3V--- VDD|1      14|VSS --- GND
+--           LED --- RA5|2      13|RA0 --- [PGD]
+--         SD CS --- RA4|3      12|RA1 --- [PGC]
+--btn SW --- [/MCLR]/RA3|4      11|RA2 --- TEST PORT
+--   PWM(L) CPP1 --- RC5|5      10|RC0 --- SPI SCK
+--     (UART TX) --- RC4|6       9|RC1 --- SPI SDI
+--   PWM(R) CCP2 --- RC3|7       8|RC2 --- SPI SDO
+--                       ---------
+-- */
+-- /*          Mono     PIC16F1825 debug test mode using UART  8KW/1024B
+--                       ---__----
+--           3.3V--- VDD|1      14|VSS --- GND
+--           LED --- RA5|2      13|RA0 --- [PGD]
+--         SD CS --- RA4|3      12|RA1 --- [PGC]
+--btn SW --- [/MCLR]/RA3|4      11|RA2 --- TEST PORT
+--       UART RX --- RC5|5      10|RC0 --- SPI SCK
+--       UART TX --- RC4|6       9|RC1 --- SPI SDI
+--   PWM(R) CCP2 --- RC3|7       8|RC2 --- SPI SDO
+--                       ---------
+-- */
+--  /*                  PIC16F1827  4KW/384B
+--                       ----_----
+--     TEST PORT --- RA2|1      18|RA1
+--   PWM(L) CCP3 --- RA3|2      17|RA0
+--   PWM(R) CCP4 --- RA4|3      16|RA7
+--btn SW [/MCLR] --- RA5|4      15|RA6 --- SPI SDO1
+--           GND --- GND|5      14|VDD --- 3.3V
+--           LED --- RB0|6      13|RB7 --- [CSPDAT]
+--      SPI SDI1 --- RB1|7      12|RB6 --- [CSPCLK]
+--      UART_RX ---- RB2|8      11|RB5 --- UART_TX
+--         SD CS --- RB3|9      10|RB4 --- SPI SCK1
+--                       ---------
+--             Playing:  26.2mA   consumption
+--             Sleeping: 22.0mA
+--  */
+--  /*
+                    PIC16F88  4KW/384B
+                    Probably dose not work.
+                    No tested, no support,
+--                       ----_----
+--     TEST PORT --- RA2|1      18|RA1
+--                   RA3|2      17|RA0
+--         SD CS --- RA4|3      16|RA7 --- OSC1
+--btn sw [/MCLR] --- RA5|4      15|RA6 --- OSC2
+--           GND --- GND|5      14|VDD --- 3.3V
+--           LED --- RB0|6      13|RB7 --- [PGD]
+--       SPI SDI --- RB1|7      12|RB6 --- [PGC]
+--       SPI SDO --- RB2|8      11|RB5 --- UART TX
+--  PWM out CCP1 --- RB3|9      10|RB4 --- SPI SCK
+--                       ---------
+--  */
+-- /*
+--                      PIC16F1459  8KW/1024B
+--                       ---__----
+--           3.3V--- VDD|1      20|VSS --- GND
+--               --- RA5|2      19|RA0 ---
+--               --- RA4|3      18|RA1 ---
+--     btn SW  /MCLR RA3|4      17|VUSB3V3
+--   PWM(L) PWM1 --- RC5|5      16|RC0 --- [PGD]
+--           LED --- RC4|6      15|RC1 --- [PGC]
+--        SD  CS --- RC3|7      14|RC2 --- TEST PORT
+--   PWM(R) PWM2 --- RC6|8      13|RB4 --- SPI SDI
+--       SPI SDO --- RC7|9      12|RB5 --- UART RX
+--       UART TX --- RB7|10     11|RB6 --- SPI SCK
+--                       ---------
+-- */
+-- /*                   PIC16F1619  8KW/1024B  [PWM3,PWM4] <- [CCP1,CCP2]
+--                      PIC16F1709  8KW/1024B
+--                      PIC16F1829  8KW/1024B
+--                       ---__----
+--           3.3V--- VDD|1      20|VSS --- GND
+--               --- RA5|2      19|RA0 --- [PGD]
+--               --- RA4|3      18|RA1 --- [PGC]
+--     btn SW  /MCLR RA3|4      17|RA2
+--   PWM(L) CCP1 --- RC5|5      16|RC0
+--           LED --- RC4|6      15|RC1 --- TEST PORT
+--   PWM(R) CCP2 --- RC3|7      14|RC2
+--        SD CS  --- RC6|8      13|RB4 --- SPI SDI
+--       SPI SDO --- RC7|9      12|RB5 --- UART RX
+--       UART TX --- RB7|10     11|RB6 --- SPI SCK
+--                       ---------
+-- */
+-- /*                   PIC18F14K50  8KW/768B
+--                       ---__----
+--           3.3V--- VDD|1      20|VSS --- GND
+--        OSC IN --- RA5|2      19|RA0 --- [PGD]
+--        OSC OUT--- RA4|3      18|RA1 --- [PGC]
+--     btn SW  /MCLR RA3|4      17|VUSB--- 3.3V
+--      PWM CCP1 --- RC5|5      16|RC0
+--           LED --- RC4|6      15|RC1 --- TEST PORT
+--                   RC3|7      14|RC2
+--        SD CS  --- RC6|8      13|RB4 --- SPI SDI
+--       SPI SDO --- RC7|9      12|RB5 --- UART RX
+--       UART TX --- RB7|10     11|RB6 --- SPI SCK
+--                       ---------
+-- */
+-- /*                   PIC16F1938   16KW/1024B
+--                       ---__----
+--  btn SW --- /MCLR RE3|1      28|RB7 --- [ISPD]
+--           LED --- RA0|2      27|RB6 --- [ISPG]
+--     TEST PORT --- RA1|3      26|RB5
+--                   RA2|4      25|RB4
+--                   RA3|5      24|RB3 CCP2 --- PWM(L)
+--                   RA4|6      23|RB2
+--                   RA5|7      22|RB1
+--           GND --- VSS|8      21|RB0
+--                   RA7|9      20|VDD --- 3.3V
+--                   RA6|10     19|VSS --- GND
+--                   RC0|11     18|RC7 --- UART RX
+--        SD CS  --- RC1|12     17|RC6 --- UART TX
+--   PWM(R) CCP1 --- RC2|13     16|RC5 --- SPI SDO
+--       SPI SCK --- RC3|14     15|RC4 --- SPI SDI
+--                       ---------
+-- */
+-- /*                   PIC18F26J50   32KW/3776B
+--                           ---__----
+--  Pull-up 10kOhm --- /MCLR|1      28|RB7 --- [ISPD]
+--               LED --- RA0|2      27|RB6 --- [ISPG]
+--         TEST PORT --- RA1|3      26|RB5 --- SPI SDI1
+--                       RA2|4      25|RB4 --- SPI SCK1
+--                       RA3|5      24|RB3/RP6 --- CCP2 PWM(R)
+--     GND --- 10uF --- Vcap|6      23|RB2 ---
+--                       RA5|7      22|RB1 --- btn SW
+--               GND --- VSS|8      21|RB0
+--                       RA7|9      20|VDD --- 3.3V
+--                       RA6|10     19|VSS --- GND
+--     UART RX2 --- RP12/RC0|11     18|RC7 --- SPI SDO1
+--            SD CS  --- RC1|12     17|RC6/RP17 --- UART TX2
+--   PWM(L) CCP1 ---RP13/RC2|13     16|RC5 --- D+/VP
+--                      Vusb|14     15|RC4 --- D-/VP
+--                           ---------
+-- */
+--
+--        10pin          8pin
+--       Stereo/SW     Mono/SW    Other
+--      1  PWM(L)
+--      2  PWM(R)     1  PWM      1 ICSPDAT
+--      3  SD CS      2  SD CS    2 ICSPCK
+--      4  SDI        3  SDI      3 UART TX
+--      5  SDO        4  SDO      4 UART RX
+--      6  SCK        5  SCK      5 TEST PORT
+--      7  SW         6  SW       6 I2C SDA
+--      8  VDD        7  VDD      7 I2C SCL
+--      9  GND        8  GND
+--     10  LED
+
+
+
+              Pin  Price  FOSC  FLASH   SARM  PPS  SPI/I2C USB CCP ECCP PWM16/4 PWM10
+PIC16F1454   14pin  130   48MHz  8KW    1024         1      1   2
+
+PIC16F1455   14pin  160   48MHz  8KW    1024         1      1   2
+PIC16F1459   20pin  180   48MHz  8KW    1024         1      1   2
+PIC16F1619   20pin  150   32MHz  8KW    1024   o     1          2
+PIC16F1705   14pin  100   32MHz  8KW    1024   o     1          2
+PIC16F1709   20pin  150   32MHz  8KW    1024   o     1          2
+PIC16F1764   14pin  120   32MHz  4KW     512   o     1          1          1       1
+
+PIC16F1825   14pin  140   32MHz  8KW    1024         1          2   2
+PIC16F1827   18pin  135   32MHz  4KW     384         2          2   2
+PIC16F1829   20pin  160   32MHz  8KW    1024         2          2   2
+PIC16F18325  14pin  100   32MHz  8KW    1024   o     2          4                 2
+
+PIC16F18326   14pin   ?   32MHz  16KW   2048   o     2          4                 2
+PIC16F18346   20pin   ?   32MHz  16KW   2048   o     2          4                 2
+
+PIC16F18313   8pin   75   32MHz  2KW     256   o     2          2                 2
+PIC12F1840    8pin  115   32MHz  4KW     256         1          0   1
+
+
+              Pin   price  FOSC  FLASH   SARM  PPS  SPI/I2C USB CCP ECCP PWM16/4 PWM10  3.3V    UART
+PIC12F1822     8pin  100   32MHz   2KW    128         1              1
+PIC16F1823    14pin  100   32MHz   2KW    128         1              1
+PIC16F1825    14pin  140   32MHz   8KW   1024         1          2   2
+PIC16F1827    18pin  135   32MHz   4KW    384         2          2   2
+PIC16F1938    28pin        32MHx  16KW   1024         1          2   3
+--
+PIC16F886     28pin        20MHz   8KW    368         1          1   1                   2MIPS
+PIC16F883     28pin        20MHz   4KW    256         1          1   1                   2MIPS
+PIC16F88      18pin        20MHz   4KW    368         1          1                       2MIPS
+PIC16F819     18pin  220   20MHz   2KW    256         1          1                       2MIPS    x
+PIC12F629      8pin        20MHz   1KW     64                    x   x                   2MIPS
+PIC12F675      8pin        20MHz   1KW     64                    x   x                   2MIPS
+PIC12F683      8pin        20MHz   2KW    128                    x   x                   2MIPS
+
+12f1572
+12f1612
+
+
+-- memo
+* Clock source for Timer2
+    FOSC/4 only
+        PIC16F1705
+        PIC16F1840
+        PIC16F1825
+        PIC16F1827
+        PIC16F1829
+        PIC16F18313
+    HAVE T2CLKCON
+        PIC16F1619
+        PIC16F1764
+        PIC16F1769
+
+
+

@@ -1,0 +1,1094 @@
+-----------------------------
+-- Refer to "pic_pin_map.txt"
+-----------------------------
+
+--------- Target definition
+
+; PIC16F18313
+if (target_chip == PIC_16F18313) Then
+    const bit HAVE_BUTTON_SW              = true; for 'Play','Pause','Power off'
+    const bit HAVE_LED_IND_PWM            = false;
+    const bit HAVE_LED_IND_BLINK          = false;
+    const bit HAVE_LED_PAUSE_INDICATOR    = false;
+    const bit HAVE_POWER_OFF_MODE         = false; under construction
+
+    const bit PIN8_MCU = true
+
+    ;if you set false(mono mode), it must be used 8bit mono wav file.
+    const bit CH_MODE_STEREO = false ;
+    ; fs=44.1KHz
+    const byte SAMPLING_FREQ  = byte( ((target_clock>>2)/44100) - 1 ) ; PR2=180
+
+    -- Enable pull-ups
+    ;OPTION_REG_WPUEN = 0 ; enable global Weak Pull-up
+    WPUA_WPUA3       = 1 ; enable pull-up: btn
+    WPUA_WPUA2       = 1 ; enable pull-up: SDI
+
+    -- Port Slew rate control
+    SLRCONA = 0 ; set max slew rate
+
+    -- PPS setting
+    include pps
+    -- in
+    SSP1DATPPS = PPS_RA2 ; RA2:SDI
+    -- out
+    RA0PPS = PPS_SDO1     ; RA0:SDO1
+    RA1PPS = PPS_SCK1     ; RA1:SCK1
+    RA5PPS = PPS_CCP1     ; RA5:CCP1
+    ;RA4PPS_RA4PPS = 0x00      ; RA4:CS (LATA4)
+
+    -- SPI definition (SD card interface)
+    alias pin_sdo_direction is pin_A0_direction
+    alias pin_sdo is pin_A0
+    alias pin_sdi_direction is pin_A2_direction
+    alias pin_sdi is pin_A2
+    alias pin_sck_direction is pin_A1_direction
+    alias pin_sck is pin_A1
+    --
+    alias sd_chip_select           is pin_A4
+    alias sd_chip_select_direction is pin_A4_direction
+
+    -- btn sw definition
+    alias btn_bit_now    is pin_A3
+
+    ;PIC16F18313
+    -- PWM definition (audio out)
+    const bit PWM_DUTY_REG_LEFT_TYPE2  = true
+    const bit PWM_DUTY_REG_RIGHT_TYPE2 = true
+    CCP1CON = 0b1000_1111       ; set PWM enable and PWM mode.
+    CCPR1H  = 0                 ; clear higher register of duty in advance.
+    alias pwm_l_port_tris_bit      is pin_A5_direction
+    pwm_l_port_tris_bit = OUTPUT; // ccp1 PWM(R) out
+    alias pwm_l_duty_lower_bits    is CCPR1L
+    alias pwm_l_duty_upper_bits    is CCPR1H
+
+
+; PIC12F1840
+elsif (target_chip == PIC_12F1840) Then
+    const bit HAVE_BUTTON_SW              = true; for 'Play','Pause','Power off'
+    const bit HAVE_LED_IND_PWM            = false;
+    const bit HAVE_LED_IND_BLINK          = false;
+    const bit HAVE_LED_PAUSE_INDICATOR    = false;
+    const bit HAVE_POWER_OFF_MODE         = false; under construction
+
+    const bit PIN8_MCU = true
+
+    ;if you set false(mono mode), it must be used 8bit mono wav file.
+    const bit CH_MODE_STEREO = false ;
+    ; fs=44.1KHz
+    const byte SAMPLING_FREQ  = byte( ((target_clock>>2)/44100) - 1 ) ; PR2=180
+
+    -- Enable pull-ups
+    OPTION_REG_WPUEN = 0 ; enable global Weak Pull-up
+    WPUA_WPUA3       = 1 ; enable pull-up: btn
+    WPUA_WPUA2       = 1 ; enable pull-up: SDI
+
+    -- SPI definition (SD card interface)
+    alias pin_sdo_direction is pin_A0_direction
+    alias pin_sdo is pin_A0
+    --
+    alias sd_chip_select           is pin_A4
+    alias sd_chip_select_direction is pin_A4_direction
+
+    -- btn sw definition
+    alias btn_bit_now    is pin_A3
+
+    ; PIC12F1840
+    -- PWM definition (audio out)
+    APFCON_CCP1SEL = 1; // ccp1 is RA5
+    CCP1CON = 0b0000_1100
+    alias pwm_l_port_tris_bit      is pin_A5_direction
+    pwm_l_port_tris_bit = OUTPUT; // ccp1 PWM(R) out
+    alias pwm_l_duty_lower_bits    is CCP1CON_DC1B
+    alias pwm_l_duty_upper_bits    is CCPR1L
+
+; PIC16F1455
+elsif (target_chip == PIC_16F1454) | (target_chip == PIC_16F1455) | (target_chip == PIC_16F1459) then
+    const bit HAVE_BUTTON_SW              = true; for 'Play','Pause','Power off'
+    const bit HAVE_LED_IND_PWM            = true;
+    const bit HAVE_LED_IND_BLINK          = false;
+    const bit HAVE_LED_PAUSE_INDICATOR    = true;
+    const bit HAVE_POWER_OFF_MODE         = false; under construction
+
+    -- test mode
+    const bit PIC16F1455_TEST_MODE = false
+
+    ;if you set false(mono mode), it must be used 8bit mono wav file.
+    const bit CH_MODE_STEREO = true ;
+
+    ; fs=44.1KHz
+    T2CON_T2CKPS =0b01  ; Timre2 prescaler is 1/4
+    const byte SAMPLING_FREQ  = byte( ((target_clock>>4)/44100) - 1 ) ; = 67
+
+    -- Enable pull-ups
+    OPTION_REG_WPUEN = 0 ; enable global Weak Pull-up
+    WPUA_WPUA3       = 1 ; enable pull-up: btn
+
+    -- Port Slew rate control
+    CLKRCON_CLKRSLR = 0 ; set max slew rate
+
+    -- UART definition
+    const serial_hw_baudrate  = 115200   -- set the baudrate
+    alias UART_RX_ENABLE is RCSTA_CREN
+    if target_chip == PIC_16F1459 then
+        alias  pin_TX            is  pin_B7
+        alias  pin_TX_direction  is  pin_B7_direction
+        alias  pin_RX            is  pin_B5
+        alias  pin_RX_direction  is  pin_B5_direction
+    else
+        alias  pin_TX            is  pin_C4
+        alias  pin_TX_direction  is  pin_C4_direction
+        alias  pin_RX            is  pin_A1
+
+        if !defined(pin_A1_direction) then ; bug fix for jallib of pic16f1455 at 2019/11/10.
+            var volatile bit    TRISA_TRISA1              at TRISA : 1
+            alias               pin_A1_direction          is TRISA_TRISA1
+        end if
+        alias  pin_RX_direction  is  pin_A1_direction
+    end if
+
+    -- LED indicator definition
+    if target_chip == PIC_16F1459 then
+        alias led            is pin_C4
+        alias led_direction  is pin_C4_direction
+    else
+        alias led            is pin_A5
+        alias led_direction  is pin_A5_direction
+    end if
+    -- btn sw definition
+    alias btn_bit_now    is pin_A3
+
+    -- SPI definition (SD card interface)
+    const bit SPI_CLOCK_MORE_SLOW = true
+    if target_chip == PIC_16F1459 then
+        alias sd_chip_select           is pin_C3
+        alias sd_chip_select_direction is pin_C3_direction
+    else
+        alias pin_sdo_direction is pin_C2_direction
+        alias pin_sdo is pin_C2
+        --
+        alias sd_chip_select           is pin_A4
+        alias sd_chip_select_direction is pin_A4_direction
+    end if
+
+    ;PIC16F1455 etc
+    -- PWM definition (audio out)
+    if PIC16F1455_TEST_MODE == false then
+        PWM1CON = 0b1100_0000
+        alias pwm_l_port_tris_bit      is pin_C5_direction
+        pwm_l_port_tris_bit = OUTPUT; // ccp1 PWM(R) out
+        alias pwm_l_duty_lower_bits    is PWM1DCL_PWM1DCL
+        alias pwm_l_duty_upper_bits    is PWM1DCH
+    end if
+    PWM2CON = 0b1100_0000
+    if target_chip == PIC_16F1459 then
+        alias pwm_r_port_tris_bit      is pin_C6_direction
+    else
+        alias pwm_r_port_tris_bit      is pin_C3_direction
+    end if
+    pwm_r_port_tris_bit = OUTPUT; // ccp2 PWM(L) out
+    alias pwm_r_duty_lower_bits    is PWM2DCL_PWM2DCL
+    alias pwm_r_duty_upper_bits    is PWM2DCH
+
+    -- TEST PORT definition
+
+; PIC16F1619
+elsif (target_chip == PIC_16F1619) Then
+    const bit HAVE_BUTTON_SW              = true; for 'Play','Pause','Power off'
+    const bit HAVE_LED_IND_PWM            = true;
+    const bit HAVE_LED_IND_BLINK          = false;
+    const bit HAVE_LED_PAUSE_INDICATOR    = true;
+    const bit HAVE_POWER_OFF_MODE         = false; under construction
+
+
+    ;if you set false(mono mode), it must be used 8bit mono wav file.
+    const bit CH_MODE_STEREO = true ;
+
+    ; fs=44.1KHz
+    const byte SAMPLING_FREQ  = byte( ((target_clock>>2)/44100) - 1 ) ; PR2=180
+
+    -- Enable pull-ups
+    OPTION_REG_WPUEN = 0 ; enable global Weak Pull-up
+    WPUA_WPUA3       = 1 ; enable pull-up: btn
+    WPUB_WPUB4       = 1 ; enable pull-up: SDI
+    WPUB_WPUB5       = 1 ; enable pull-up: UART RX
+
+    --
+    const bit USE_CCPX = true   ; use CCP1,CCP2 for PWM
+    -- Port Slew rate control
+    SLRCONA = 0 ; set max slew rate
+
+    -- PPS setting
+    include pps
+    -- in
+    SSPDATPPS = PPS_RB4; RB4:SDI
+    -- out
+    RC7PPS    = PPS_SDO; RC7:SDO
+    RB6PPS    = PPS_SCK; RB6:SCK
+    if USE_CCPX then
+        RC5PPS    = PPS_CCP1; RC5:CCP1
+        RC3PPS    = PPS_CCP2; RC3:CCP2
+    else
+        RC5PPS    = PPS_PWM3OUT; RC5:PWM3
+        RC3PPS    = PPS_PWM4OUT; RC3:PWM4
+    end if
+    if UART_INFO then
+        RXPPS     = PPS_RB5; RB5:UART RX
+        RB7PPS    = PPS_TX ; RB7:UART TX
+    end if
+    ;RC6PPS    = 0x00; RC6:CS (LATC6)
+
+    -- UART definition
+    const serial_hw_baudrate  = 115200   -- set the baudrate
+    alias UART_RX_ENABLE is RCSTA_CREN
+    alias  pin_TX            is  pin_B7
+    alias  pin_TX_direction  is  pin_B7_direction
+    alias  pin_RX            is  pin_B5
+    alias  pin_RX_direction  is  pin_B5_direction
+
+    -- LED indicator definition
+    alias led            is pin_C4
+    alias led_direction  is pin_C4_direction
+    -- btn sw definition
+    alias btn_bit_now    is pin_A3
+
+    -- SPI definition (SD card interface)
+    const bit SPI_CLOCK_MORE_SLOW = true
+    alias pin_sdo_direction is pin_C7_direction
+    alias pin_sdo is pin_C7
+    alias pin_sdi_direction is pin_B4_direction
+    alias pin_sdi is pin_B4
+    alias pin_sck_direction is pin_B6_direction
+    alias pin_sck is pin_B6
+    --
+    alias sd_chip_select           is pin_C6
+    alias sd_chip_select_direction is pin_C6_direction
+
+    ; PIC16F1619
+    -- PWM definition (audio out)
+    T2CLKCON_CS = 0b0000   ; Use FOSC/4 for Period timer
+    if USE_CCPX then
+        const bit PWM_DUTY_REG_LEFT_TYPE2  = true
+        const bit PWM_DUTY_REG_RIGHT_TYPE2 = true
+        CCP1CON = 0b1000_1100
+        CCPR1H = 0
+        alias pwm_l_port_tris_bit      is pin_C5_direction
+        pwm_l_port_tris_bit = OUTPUT; // CCP1 PWM(R) out
+        alias pwm_l_duty_lower_bits    is CCPR1L
+        alias pwm_l_duty_upper_bits    is CCPR1H
+
+        CCP2CON = 0b1000_1100
+        CCPR2H = 0
+        alias pwm_r_port_tris_bit      is pin_C3_direction
+        pwm_r_port_tris_bit = OUTPUT; // CCP2 PWM(L) out
+        alias pwm_r_duty_lower_bits    is CCPR2L
+        alias pwm_r_duty_upper_bits    is CCPR2H
+    else
+        PWM3CON = 0b1000_0000
+        alias pwm_l_port_tris_bit      is pin_C5_direction
+        pwm_l_port_tris_bit = OUTPUT; // PWM3 PWM(R) out
+        alias pwm_l_duty_lower_bits    is PWM3DCL_DC
+        alias pwm_l_duty_upper_bits    is PWM3DCH
+
+        PWM4CON = 0b1000_0000
+        alias pwm_r_port_tris_bit      is pin_C3_direction
+        pwm_r_port_tris_bit = OUTPUT; // PWM4 PWM(L) out
+        alias pwm_r_duty_lower_bits    is PWM4DCL_DC
+        alias pwm_r_duty_upper_bits    is PWM4DCH
+    end if
+
+    -- TEST PORT definition
+    alias test_port           is pin_C1
+    alias test_port_direction is pin_C1_direction
+
+; PIC16F1705
+elsif (target_chip == PIC_16F1705) Then
+    const bit HAVE_BUTTON_SW              = true; for 'Play','Pause','Power off'
+    const bit HAVE_LED_IND_PWM            = true;
+    const bit HAVE_LED_IND_BLINK          = false;
+    const bit HAVE_LED_PAUSE_INDICATOR    = true;
+    const bit HAVE_POWER_OFF_MODE         = false; under construction
+
+    -- test mode
+    const bit PIC16F1705_TEST_MODE = false
+
+    ;if you set false(mono mode), it must be used 8bit mono wav file.
+    const bit CH_MODE_STEREO = true ;
+
+    ; fs=44.1KHz
+    const byte SAMPLING_FREQ  = byte( ((target_clock>>2)/44100) - 1 ) ; PR2=180
+
+    -- Enable pull-ups
+    OPTION_REG_WPUEN = 0 ; enable global Weak Pull-up
+    WPUA_WPUA3       = 1 ; enable pull-up: btn
+    WPUC_WPUC1       = 1 ; enable pull-up: SDI
+    if PIC16F1705_TEST_MODE then
+        WPUC_WPUC5       = 1 ; enable pull-up: UART RX
+    end if
+
+    -- Port Slew rate control
+    SLRCONA = 0 ; set max slew rate
+
+    -- PPS setting
+    include pps
+    -- in
+    SSPDATPPS = PPS_RC1; RC1:SDI
+    -- out
+    RC2PPS = PPS_SDO      ; RC2:SDO
+    RC0PPS = PPS_SCK      ; RC0:SCK
+    RC5PPS = PPS_CCP1     ; RC5:CCP1
+    RC3PPS = PPS_CCP2     ; RC3:CCP2
+    ;RA4PPS_RA4PPS = 0x00      ; RA4:CS (LATA4)
+
+    -- UART definition
+    const serial_hw_baudrate  = 115200   -- set the baudrate
+    alias UART_RX_ENABLE is RCSTA_CREN
+    alias  pin_TX            is  pin_C4
+    alias  pin_TX_direction  is  pin_C4_direction
+    alias  pin_RX            is  pin_C5
+    alias  pin_RX_direction  is  pin_C5_direction
+
+    -- LED indicator definition
+    alias led            is pin_A5
+    alias led_direction  is pin_A5_direction
+    -- btn sw definition
+    alias btn_bit_now    is pin_A3
+
+    -- SPI definition (SD card interface)
+    const bit SPI_CLOCK_MORE_SLOW = true
+    alias pin_sdo_direction is pin_C2_direction
+    alias pin_sdo is pin_C2
+    alias pin_sdi_direction is pin_C1_direction
+    alias pin_sdi is pin_C1
+    alias pin_sck_direction is pin_C0_direction
+    alias pin_sck is pin_C0
+    --
+    alias sd_chip_select           is pin_A4
+    alias sd_chip_select_direction is pin_A4_direction
+
+    ; PIC16F1705
+    -- PWM definition (audio out)
+    if PIC16F1705_TEST_MODE == false then
+        CCP1CON = 0b0000_1100
+        alias pwm_l_port_tris_bit      is pin_C5_direction
+        pwm_l_port_tris_bit = OUTPUT; // ccp1 PWM(R) out
+        alias pwm_l_duty_lower_bits    is CCP1CON_DC1B
+        alias pwm_l_duty_upper_bits    is CCPR1L
+    end if
+    CCP2CON = 0b0000_1100
+    alias pwm_r_port_tris_bit      is pin_C3_direction
+    pwm_r_port_tris_bit = OUTPUT; // ccp2 PWM(L) out
+    alias pwm_r_duty_lower_bits    is CCP2CON_DC2B
+    alias pwm_r_duty_upper_bits    is CCPR2L
+
+    -- TEST PORT definition
+    alias test_port           is pin_A2
+    alias test_port_direction is pin_A2_direction
+
+; PIC16F1709
+elsif (target_chip == PIC_16F1709) Then
+    const bit HAVE_BUTTON_SW              = true; for 'Play','Pause','Power off'
+    const bit HAVE_LED_IND_PWM            = true;
+    const bit HAVE_LED_IND_BLINK          = false;
+    const bit HAVE_LED_PAUSE_INDICATOR    = true;
+    const bit HAVE_POWER_OFF_MODE         = false; under construction
+
+    ;if you set false(mono mode), it must be used 8bit mono wav file.
+    const bit CH_MODE_STEREO = true ;
+
+    ; fs=44.1KHz
+    const byte SAMPLING_FREQ  = byte( ((target_clock>>2)/44100) - 1 ) ; PR2=180
+
+    -- Enable pull-ups
+    OPTION_REG_WPUEN = 0 ; enable global Weak Pull-up
+    WPUA_WPUA3       = 1 ; enable pull-up: btn
+    WPUB_WPUB4       = 1 ; enable pull-up: SDI
+    WPUB_WPUB5       = 1 ; enable pull-up: UART RX
+
+    -- Port Slew rate control
+    SLRCONA = 0 ; set max slew rate
+
+    -- PPS setting
+    include pps
+    -- in
+    SSPDATPPS = PPS_RB4; RB4:SDI
+    -- out
+    RC7PPS = PPS_SDO      ; RC7:SDO
+    RB6PPS = PPS_SCK      ; RB6:SCK
+    RC5PPS = PPS_CCP1     ; RC5:CCP1
+    RC3PPS = PPS_CCP2     ; RC3:CCP2
+    ;RC6PPS_RC6PPS = 0x00      ; RC6:CS (LATC6)
+    if UART_INFO then
+        RXPPS     = PPS_RB5; RB5:UART RX
+        RB7PPS    = PPS_TX ; RB7:UART TX
+    end if
+
+    -- UART definition
+    const serial_hw_baudrate  = 115200   -- set the baudrate
+    alias UART_RX_ENABLE is RCSTA_CREN
+    alias  pin_TX            is  pin_B7
+    alias  pin_TX_direction  is  pin_B7_direction
+    alias  pin_RX            is  pin_B5
+    alias  pin_RX_direction  is  pin_B5_direction
+
+    -- LED indicator definition
+    alias led            is pin_C4
+    alias led_direction  is pin_C4_direction
+    -- btn sw definition
+    alias btn_bit_now    is pin_A3
+
+    -- SPI definition (SD card interface)
+    const bit SPI_CLOCK_MORE_SLOW = true
+    alias pin_sdo_direction is pin_C7_direction
+    alias pin_sdo is pin_C7
+    alias pin_sdi_direction is pin_B4_direction
+    alias pin_sdi is pin_B4
+    alias pin_sck_direction is pin_B6_direction
+    alias pin_sck is pin_B6
+    --
+    alias sd_chip_select           is pin_C6
+    alias sd_chip_select_direction is pin_C6_direction
+
+    ; PIC16F1709
+    -- PWM definition (audio out)
+    CCP1CON = 0b0000_1100
+    alias pwm_l_port_tris_bit      is pin_C5_direction
+    pwm_l_port_tris_bit = OUTPUT; // ccp1 PWM(R) out
+    alias pwm_l_duty_lower_bits    is CCP1CON_DC1B
+    alias pwm_l_duty_upper_bits    is CCPR1L
+
+    CCP2CON = 0b0000_1100
+    alias pwm_r_port_tris_bit      is pin_C3_direction
+    pwm_r_port_tris_bit = OUTPUT; // ccp2 PWM(L) out
+    alias pwm_r_duty_lower_bits    is CCP2CON_DC2B
+    alias pwm_r_duty_upper_bits    is CCPR2L
+
+    -- TEST PORT definition
+    alias test_port           is pin_C1
+    alias test_port_direction is pin_C1_direction
+
+; PIC16F1764
+elsif (target_chip == PIC_16F1764) Then
+    const bit HAVE_BUTTON_SW              = true; for 'Play','Pause','Power off'
+    const bit HAVE_LED_IND_PWM            = true;
+    const bit HAVE_LED_IND_BLINK          = false;
+    const bit HAVE_LED_PAUSE_INDICATOR    = true;
+    const bit HAVE_POWER_OFF_MODE         = false; under construction
+
+    -- test mode
+    const bit PIC16F1764_TEST_MODE = false
+
+    ;if you set false(mono mode), it must be used 8bit mono wav file.
+    const bit CH_MODE_STEREO = true ;
+
+    ; fs=44.1KHz
+    const byte SAMPLING_FREQ  = byte( ((target_clock>>2)/44100) - 1 ) ; PR2=180
+
+    -- Enable pull-ups
+    OPTION_REG_WPUEN = 0 ; enable global Weak Pull-up
+    WPUA_WPUA3       = 1 ; enable pull-up: btn
+    WPUC_WPUC1       = 1 ; enable pull-up: SDI
+    if PIC16F1764_TEST_MODE then
+        WPUC_WPUC5       = 1 ; enable pull-up: UART RX
+    end if
+
+    -- Port Slew rate control
+    SLRCONA = 0 ; set max slew rate
+
+    -- PPS setting
+    include pps
+    -- in
+    SSPDATPPS = PPS_RC1; RC1:SDI
+    -- out
+    RC2PPS = PPS_SDO      ; RC2:SDO
+    RC0PPS = PPS_SCK      ; RC0:SCK
+    RC5PPS = PPS_CCP1     ; RC5:CCP1
+    RC3PPS = PPS_PWM3OUT  ; RC3:PWM3
+    if PIC16F1764_TEST_MODE then
+        RXPPS  = PPS_RC5  ; RC5:UART RX
+        RC4PPS = PPS_TX   ; RC4:UART TX
+    end if
+
+    -- UART definition
+    const serial_hw_baudrate  = 115200   -- set the baudrate
+    alias UART_RX_ENABLE is RCSTA_CREN
+    alias  pin_TX            is  pin_C4
+    alias  pin_TX_direction  is  pin_C4_direction
+    alias  pin_RX            is  pin_C5
+    alias  pin_RX_direction  is  pin_C5_direction
+
+    -- LED indicator definition
+    alias led            is pin_A5
+    alias led_direction  is pin_A5_direction
+    -- btn sw definition
+    alias btn_bit_now    is pin_A3
+
+    -- SPI definition (SD card interface)
+    const bit SPI_CLOCK_MORE_SLOW = true
+    alias pin_sdo_direction is pin_C2_direction
+    alias pin_sdo is pin_C2
+    alias pin_sdi_direction is pin_C1_direction
+    alias pin_sdi is pin_C1
+    alias pin_sck_direction is pin_C0_direction
+    alias pin_sck is pin_C0
+    --
+    alias sd_chip_select           is pin_A4
+    alias sd_chip_select_direction is pin_A4_direction
+
+    ; PIC16F1764
+    -- PWM definition (audio out)
+    T2CLKCON_CS = 0b0001   ; Use FOSC/4 for Period timer
+    if PIC16F1764_TEST_MODE == false then
+        const bit PWM_DUTY_REG_LEFT_TYPE2  = true
+        CCP1CON = 0b1000_1100
+        CCPR1H  = 0                 ; clear higher register of duty in advance.
+        alias pwm_l_port_tris_bit      is pin_C5_direction
+        pwm_l_port_tris_bit = OUTPUT; // ccp1 PWM(L) out
+        alias pwm_l_duty_lower_bits    is CCPR1L
+        alias pwm_l_duty_upper_bits    is CCPR1H
+    end if
+    PWM3CON = 0b1000_0000
+    alias pwm_r_port_tris_bit      is pin_C3_direction
+    pwm_r_port_tris_bit = OUTPUT; // PWM3 PWM(R) out
+    alias pwm_r_duty_lower_bits    is PWM3DCL_DC
+    alias pwm_r_duty_upper_bits    is PWM3DCH
+
+    -- TEST PORT definition
+    alias test_port           is pin_A2
+    alias test_port_direction is pin_A2_direction
+
+; PIC16F1825
+elsif (target_chip == PIC_16F1825) Then
+    const bit HAVE_BUTTON_SW              = true; for 'Play','Pause','Power off'
+    const bit HAVE_LED_IND_PWM            = true;
+    const bit HAVE_LED_IND_BLINK          = false;
+    const bit HAVE_LED_PAUSE_INDICATOR    = true;
+    const bit HAVE_POWER_OFF_MODE         = false; under construction
+
+    -- test mode
+    const bit PIC16F1825_TEST_MODE = false
+
+    ;if you set false(mono mode), it must be used 8bit mono wav file.
+    const bit CH_MODE_STEREO = true ;
+
+    ; fs=44.1KHz
+    const byte SAMPLING_FREQ  = byte( ((target_clock>>2)/44100) - 1 ) ; PR2=180
+
+    -- Enable pull-ups
+    OPTION_REG_WPUEN = 0 ; enable global Weak Pull-up
+    WPUA_WPUA3       = 1 ; enable pull-up: btn
+    WPUC_WPUC1       = 1 ; enable pull-up: SDI
+    if PIC16F1825_TEST_MODE then
+        WPUC_WPUC5       = 1 ; enable pull-up: UART RX
+    end if
+
+    -- UART definition
+    const serial_hw_baudrate  = 115200   -- set the baudrate
+    alias UART_RX_ENABLE is RCSTA_CREN
+    alias  pin_TX            is  pin_TX_RC4
+    alias  pin_TX_direction  is  pin_TX_RC4_direction
+    alias  pin_RX            is  pin_RX_RC5
+    alias  pin_RX_direction  is  pin_RX_RC5_direction
+
+    -- LED indicator definition
+    alias led            is pin_A5
+    alias led_direction  is pin_A5_direction
+    -- btn sw definition
+    alias btn_bit_now    is pin_A3
+
+    -- SPI definition (SD card interface)
+    alias pin_sdo_direction is pin_C2_direction
+    alias pin_sdo is pin_C2
+    --
+    alias sd_chip_select           is pin_A4
+    alias sd_chip_select_direction is pin_A4_direction
+
+    ; PIC16F1825
+    -- PWM definition (audio out)
+    if PIC16F1825_TEST_MODE == false then
+        CCP1CON = 0b0000_1100
+        alias pwm_l_port_tris_bit      is pin_C5_direction
+        pwm_l_port_tris_bit = OUTPUT; // ccp1 PWM(R) out
+        alias pwm_l_duty_lower_bits    is CCP1CON_DC1B
+        alias pwm_l_duty_upper_bits    is CCPR1L
+    end if
+    CCP2CON = 0b0000_1100
+    alias pwm_r_port_tris_bit      is pin_C3_direction
+    pwm_r_port_tris_bit = OUTPUT; // ccp2 PWM(L) out
+    alias pwm_r_duty_lower_bits    is CCP2CON_DC2B
+    alias pwm_r_duty_upper_bits    is CCPR2L
+
+    -- TEST PORT definition
+    alias test_port           is pin_A2
+    alias test_port_direction is pin_A2_direction
+
+; PIC16F18325
+elsif (target_chip == PIC_16F18325) Then
+    const bit HAVE_BUTTON_SW              = true; for 'Play','Pause','Power off'
+    const bit HAVE_LED_IND_PWM            = true;
+    const bit HAVE_LED_IND_BLINK          = false;
+    const bit HAVE_LED_PAUSE_INDICATOR    = true;
+    const bit HAVE_POWER_OFF_MODE         = false; under construction
+
+    -- test mode
+    const bit PIC16F18325_TEST_MODE = false
+
+    ;if you set false(mono mode), it must be used 8bit mono wav file.
+    const bit CH_MODE_STEREO = true ;
+
+    ; fs=44.1KHz
+    const byte SAMPLING_FREQ  = byte( ((target_clock>>2)/44100) - 1 ) ; PR2=180
+
+    -- Enable pull-ups
+    ;OPTION_REG_WPUEN = 0 ; enable global Weak Pull-up
+    WPUA_WPUA3       = 1 ; enable pull-up: btn
+    WPUC_WPUC1       = 1 ; enable pull-up: SDI
+    if PIC16F18325_TEST_MODE then
+        WPUC_WPUC5       = 1 ; enable pull-up: UART RX
+    end if
+
+    -- UART definition
+    const serial_hw_baudrate  = 115200   -- set the baudrate
+    alias UART_RX_ENABLE is RCSTA_CREN
+    alias  pin_TX            is  pin_C4
+    alias  pin_TX_direction  is  pin_C4_direction
+    alias  pin_RX            is  pin_C5
+    alias  pin_RX_direction  is  pin_C5_direction
+
+    -- LED indicator definition
+    alias led            is pin_A5
+    alias led_direction  is pin_A5_direction
+
+    -- Port Slew rate control
+    SLRCONA = 0 ; set max slew rate
+
+    -- PPS setting
+    include  pps
+    -- in
+    SSP1DATPPS = PPS_RC1 ; RC1:SDI
+    -- out
+    RC2PPS = PPS_SDO1    ; RC2:SDO1
+    RC0PPS = PPS_SCK1    ; RC0:SCK1
+    RC5PPS = PPS_CCP1    ; RC5:CCP1
+    RC3PPS = PPS_CCP2    ; RC3:CCP2
+    if PIC16F18325_TEST_MODE then
+        RXPPS  = PPS_RC5 ; RC5:UART RX
+        RC4PPS = PPS_TX  ; RC4:UART TX
+    end if
+
+    -- SPI definition (SD card interface)
+    const bit SPI_CLOCK_MORE_SLOW = true
+    alias pin_sdo_direction is pin_C2_direction
+    alias pin_sdo is pin_C2
+    alias pin_sdi_direction is pin_C1_direction
+    alias pin_sdi is pin_C1
+    alias pin_sck_direction is pin_C0_direction
+    alias pin_sck is pin_C0
+    --
+    alias sd_chip_select           is pin_A4
+    alias sd_chip_select_direction is pin_A4_direction
+
+    -- btn sw definition
+    alias btn_bit_now    is pin_A3
+
+    ; PIC16F18325
+    -- PWM definition (audio out)
+    const bit PWM_DUTY_REG_LEFT_TYPE2  = true
+    const bit PWM_DUTY_REG_RIGHT_TYPE2 = true
+    if PIC16F18325_TEST_MODE == false then
+        CCP1CON = 0b1000_1111       ; set PWM enable and PWM mode.
+        CCPR1H  = 0                 ; clear higher register of duty in advance.
+        alias pwm_l_port_tris_bit      is pin_C5_direction
+        pwm_l_port_tris_bit = OUTPUT; // ccp1 PWM(R) out
+        alias pwm_l_duty_lower_bits    is CCPR1L
+        alias pwm_l_duty_upper_bits    is CCPR1H
+    end if
+    CCP2CON = 0b1000_1111       ; set PWM enable and PWM mode.
+    CCPR2H  = 0                 ; clear higher register of duty in advance.
+    alias pwm_r_port_tris_bit is pin_C3_direction
+    pwm_r_port_tris_bit = OUTPUT; // ccp2 PWM(L) out
+    alias pwm_r_duty_lower_bits    is CCPR2L
+    alias pwm_r_duty_upper_bits    is CCPR2H
+
+    -- TEST PORT definition
+    alias test_port           is pin_A2
+    alias test_port_direction is pin_A2_direction
+
+
+; PIC16F1827
+elsif (target_chip == PIC_16F1827) Then
+    const bit HAVE_BUTTON_SW              = true; for 'Play','Pause','Power off'
+    const bit HAVE_LED_IND_PWM            = true;
+    const bit HAVE_LED_IND_BLINK          = false;
+    const bit HAVE_LED_PAUSE_INDICATOR    = true;
+    const bit HAVE_POWER_OFF_MODE         = false; under construction
+
+    const bit CH_MODE_STEREO = true
+    ; fs=44.1KHz
+    const byte SAMPLING_FREQ  = byte( ((target_clock>>2)/44100) - 1 ) ; PR2=180
+
+    -- Enable pull-ups
+    OPTION_REG_WPUEN = 0 ; enable global Weak Pull-up
+    WPUA_WPUA5       = 1 ; enable pull-up: btn
+    WPUB_WPUB1       = 1 ; enable pull-up: SDI1
+    WPUB_WPUB2       = 1 ; enable pull-up: UART RX
+
+    -- UART definition
+    const serial_hw_baudrate  = 115200   -- set the baudrate
+    alias UART_RX_ENABLE is RCSTA_CREN
+    WPUB_WPUB2      = 1;   /* Weak pull-up enable */
+    APFCON0_RXDTSEL = 1;    /* RX = RB2 , 8pin
+    APFCON1_TXCKSEL = 1;    /* TX = RB5 , 11pin
+    alias  pin_TX            is  pin_TX_RB5
+    alias  pin_TX_direction  is  pin_TX_RB5_direction
+    alias  pin_RX            is  pin_RX_RB2
+    alias  pin_RX_direction  is  pin_RX_RB2_direction
+
+    -- LED indicator definition
+    alias led                 is pin_B0
+    alias led_direction       is pin_B0_direction
+
+    -- btn sw definition
+    ;var volatile bit     pin_A5  at PORTA : 5 ; fix bug for jallib 1.2.0
+    alias btn_bit_now is pin_A5
+
+    -- SPI definition (SD card interface)
+    APFCON0_SDO1SEL = 1 ; select alternate pin
+    alias pin_sdo_direction is pin_A6_direction
+    alias pin_sdo is pin_A6
+    --
+    alias sd_chip_select           is pin_B3
+    alias sd_chip_select_direction is pin_B3_direction
+
+    ; PIC16F1827
+    -- PWM definition (audio out)
+    CCP3CON = 0b0000_1100
+    CCP4CON = 0b0000_1100
+    alias pwm_l_port_tris_bit      is pin_A3_direction
+    alias pwm_r_port_tris_bit      is pin_A4_direction
+    pwm_l_port_tris_bit = OUTPUT; // ccp3 PWM(L) out
+    pwm_r_port_tris_bit = OUTPUT; // ccp4 PWM(R) out
+    alias pwm_l_duty_lower_bits    is CCP3CON_DC3B
+    alias pwm_l_duty_upper_bits    is CCPR3L
+    alias pwm_r_duty_lower_bits    is CCP4CON_DC4B
+    alias pwm_r_duty_upper_bits    is CCPR4L
+
+    -- TEST PORT definition
+    alias test_port           is pin_A2
+    alias test_port_direction is pin_A2_direction
+
+; PIC16F1829
+elsif (target_chip == PIC_16F1829) Then
+    const bit HAVE_BUTTON_SW              = true; for 'Play','Pause','Power off'
+    const bit HAVE_LED_IND_PWM            = true;
+    const bit HAVE_LED_IND_BLINK          = false;
+    const bit HAVE_LED_PAUSE_INDICATOR    = true;
+    const bit HAVE_POWER_OFF_MODE         = false; under construction
+
+    ;if you set false(mono mode), it must be used 8bit mono wav file.
+    const bit CH_MODE_STEREO = true ;
+
+    ; fs=44.1KHz
+    const byte SAMPLING_FREQ  = byte( ((target_clock>>2)/44100) - 1 ) ; PR2=180
+
+    -- Enable pull-ups
+    OPTION_REG_WPUEN = 0 ; enable global Weak Pull-up
+    WPUA_WPUA3       = 1 ; enable pull-up: btn
+    WPUC_WPUC1       = 1 ; enable pull-up: SDI
+    WPUB_WPUB5       = 1 ; enable pull-up: UART RX
+
+    -- UART definition
+    const serial_hw_baudrate  = 115200   -- set the baudrate
+    alias UART_RX_ENABLE is RCSTA_CREN
+    alias  pin_TX            is  pin_TX_RB7
+    alias  pin_TX_direction  is  pin_TX_RB7_direction
+    alias  pin_RX            is  pin_RX_RB5
+    alias  pin_RX_direction  is  pin_RX_RB5_direction
+
+    -- LED indicator definition
+    alias led            is pin_C4
+    alias led_direction  is pin_C4_direction
+    -- btn sw definition
+    alias btn_bit_now    is pin_A3
+
+    -- SPI definition (SD card interface)
+    alias sd_chip_select           is pin_C6
+    alias sd_chip_select_direction is pin_C6_direction
+
+    ; PIC16F1829
+    -- PWM definition (audio out)
+    CCP1CON = 0b0000_1100
+    alias pwm_l_port_tris_bit      is pin_C5_direction
+    pwm_l_port_tris_bit = OUTPUT; // ccp1 PWM(R) out
+    alias pwm_l_duty_lower_bits    is CCP1CON_DC1B
+    alias pwm_l_duty_upper_bits    is CCPR1L
+
+    CCP2CON = 0b0000_1100
+    alias pwm_r_port_tris_bit      is pin_C3_direction
+    pwm_r_port_tris_bit = OUTPUT; // ccp2 PWM(L) out
+    alias pwm_r_duty_lower_bits    is CCP2CON_DC2B
+    alias pwm_r_duty_upper_bits    is CCPR2L
+
+    -- TEST PORT definition
+    alias test_port           is pin_C1
+    alias test_port_direction is pin_C1_direction
+
+; PIC16F88
+elsif (target_chip == PIC_16F88) Then
+    const bit HAVE_BUTTON_SW              = true; for 'Play','Pause','Power off'
+    const bit HAVE_LED_IND_PWM            = true;
+    const bit HAVE_LED_IND_BLINK          = false;
+    const bit HAVE_LED_PAUSE_INDICATOR    = true;
+    const bit HAVE_POWER_OFF_MODE         = false; under construction
+
+    const bit CH_MODE_STEREO = false
+    -- fs=44.1KHz
+    const byte SAMPLING_FREQ  = byte( ((target_clock>>2)/44100) - 1 ) ;
+
+    -- Enable pull-ups
+    OPTION_REG_NRBPU  = 0 ; enable RB port Weak Pull-up
+                          ; auto pull-up each RBx, if it is set to input function
+
+    -- UART definition
+    const serial_hw_baudrate  = 9600   -- set the baudrate
+    alias UART_RX_ENABLE is RCSTA_CREN
+
+    -- PWM period timer2 prescale setting
+    ;T2CON_T2CKPS = 0b01;    target_clock/4
+
+    -- LED indicator definition
+    alias led                 is pin_B0
+    alias led_direction       is pin_B0_direction
+
+    -- btn sw definition
+    ;var volatile bit     pin_A5  at PORTA : 5 ; fix bug for jallib 1.20
+    alias btn_bit_now is pin_A5
+
+    -- SPI definition (SD card interface)
+    alias sd_chip_select           is pin_A4
+    alias sd_chip_select_direction is pin_A4_direction
+
+    -- PWM definition
+    CCP1CON = 0b0000_1100
+    alias pwm_l_port_tris_bit      is pin_B3_direction
+    pwm_l_port_tris_bit = OUTPUT; // ccp1 PWM out
+    alias pwm_l_duty_lower_bits    is CCP1CON_DC1B
+    alias pwm_l_duty_upper_bits    is CCPR1L
+
+    -- TEST PORT definition
+    alias test_port           is pin_A2
+    alias test_port_direction is pin_A2_direction
+
+; PIC16F1938
+elsif (target_chip == PIC_16F1938) Then
+    const bit HAVE_BUTTON_SW              = true; for 'Play','Pause','Power off'
+    const bit HAVE_LED_IND_PWM            = true;
+    const bit HAVE_LED_IND_BLINK          = false;
+    const bit HAVE_LED_PAUSE_INDICATOR    = true;
+    const bit HAVE_POWER_OFF_MODE         = false; under construction
+
+    const bit CH_MODE_STEREO = true
+    ; fs=44.1KHz
+    const byte SAMPLING_FREQ  = byte( ((target_clock>>2)/44100) - 1 ) ; PR2=180
+
+    -- Enable pull-ups
+    OPTION_REG_WPUEN = 0 ; global Weak Pull-up
+    WPUE_WPUE3       = 1 ; enable pull-up: btn sw
+    ;WPUC_WPUC4       = 1 ; enable pull-up: SDI
+    ;WPUC_WPUC7       = 1 ; enable pull-up: UART RX
+
+    -- UART definition
+    const serial_hw_baudrate  = 115200   -- set the baudrate
+    alias UART_RX_ENABLE is RCSTA_CREN
+
+    -- LED indicator definition
+    alias led                 is pin_A0
+    alias led_direction       is pin_A0_direction
+
+    -- btn sw definition
+    alias btn_bit_now is pin_E3
+
+    -- SPI definition (SD card interface)
+    alias sd_chip_select           is pin_C1
+    alias sd_chip_select_direction is pin_C1_direction
+
+    -- PWM definition (audio out)
+    APFCON_CCP2SEL = 1;  select CCP2 to RB3
+    CCP1CON = 0b0000_1100
+    CCP2CON = 0b0000_1100
+    alias pwm_l_port_tris_bit      is pin_B3_direction
+    alias pwm_r_port_tris_bit      is pin_C2_direction
+    pwm_l_port_tris_bit = OUTPUT; ccp2 // PWM(L) out
+    pwm_r_port_tris_bit = OUTPUT; ccp1 // PWM(R) out
+    alias pwm_l_duty_lower_bits    is CCP2CON_DC2B
+    alias pwm_l_duty_upper_bits    is CCPR2L
+    alias pwm_r_duty_lower_bits    is CCP1CON_DC1B
+    alias pwm_r_duty_upper_bits    is CCPR1L
+
+    -- TEST PORT definition
+    alias test_port           is pin_A0
+    alias test_port_direction is pin_A0_direction
+
+; PIC18F14K50
+elsif (target_chip == PIC_18F14K50) | target_chip == PIC_18F13K50 Then
+    const bit HAVE_BUTTON_SW              = true; for 'Play','Pause','Power off'
+    const bit HAVE_LED_IND_PWM            = true;
+    const bit HAVE_LED_IND_BLINK          = false;
+    const bit HAVE_LED_PAUSE_INDICATOR    = true;
+    const bit HAVE_POWER_OFF_MODE         = false; under construction
+
+    const bit CH_MODE_STEREO = false
+    ; fs=44.1KHz
+    const byte SAMPLING_FREQ  = byte( ((target_clock>>2)/44100) - 1 ) ; PR2=180
+
+    -- Enable pull-ups
+    INTCON2_RABPU = 0    ; enable global Weak Pull-up
+    WPUB_WPUB4       = 1 ; enable pull-up: SDI
+    WPUB_WPUB5       = 1 ; enable pull-up: UART RX
+    WPUA_WPUA3       = 1 ; enable pull-up: btn
+
+    -- UART definition
+    const serial_hw_baudrate  = 115200   -- set the baudrate
+    alias UART_RX_ENABLE is RCSTA_CREN
+
+    -- LED indicator definition
+    alias led                 is pin_C4
+    alias led_direction       is pin_C4_direction
+
+    -- btn sw definition
+    alias btn_bit_now is pin_A3
+
+    -- SPI definition (SD card interface)
+    alias sd_chip_select           is pin_C6
+    alias sd_chip_select_direction is pin_C6_direction
+
+    -- PWM definition (audio out)
+    CCP1CON = 0b0000_1100
+    alias pwm_l_port_tris_bit         is pin_C5_direction
+    pwm_l_port_tris_bit = OUTPUT; //ccp1 PWM(L) out
+    alias pwm_l_duty_lower_bits       is CCP1CON_DC1B
+    alias pwm_l_duty_upper_bits       is CCPR1L
+
+    -- TEST PORT definition
+    alias test_port           is pin_C1
+    alias test_port_direction is pin_C1_direction
+end if
+
+; PIC18F26J50
+if target_chip == PIC_18F26J50 then
+    const bit HAVE_BUTTON_SW              = true; for 'Play','Pause','Power off'
+    const bit HAVE_LED_IND_PWM            = true;
+    const bit HAVE_LED_IND_BLINK          = false;
+    const bit HAVE_LED_PAUSE_INDICATOR    = true;
+    const bit HAVE_POWER_OFF_MODE         = false; under construction
+
+    const bit CH_MODE_STEREO = true
+    ; fs=44.1KHz
+    T2CON_T2CKPS =0b01  ; Timre2 prescaler is 1/4
+    const byte SAMPLING_FREQ  = byte( ((target_clock>>4)/44100) - 1 ) ; 67
+
+    -- Enable pull-ups
+    INTCON2_RBPU = 0     ; enable global Weak Pull-up
+
+    -- PPS
+    include pps
+    -- in
+    PPS_MAP_RX2DT2 = RP12   ;RP12; RC0 UART RX2
+    -- out
+    PPS_MAP_RP13 = PPS_CCP1 ;RP13: RC2: CPP1 PWM(L)
+    PPS_MAP_RP6  = PPS_CCP2 ;RP6:  RB3: CPP2 PWM(R)
+    PPS_MAP_RP17 = PPS_TX2  ;RP17: RC6: UART TX2
+
+    -- UART definition
+    const bit USE_UART2 = true
+    const serial_hw2_baudrate  = 115200   -- set the baudrate
+    alias UART_RX_ENABLE is RCSTA_CREN
+    alias  pin_TX2            is  pin_RP17 ; = RC6
+    alias  pin_TX2_direction  is  pin_RP17_direction
+    alias  pin_RX2            is  pin_RP12 ; = RC0
+    alias  pin_RX2_direction  is  pin_RP12_direction
+
+    -- LED indicator definition
+    alias led                 is pin_A0
+    alias led_direction       is pin_A0_direction
+
+    -- btn sw definition
+    alias btn_bit_now is pin_B1
+
+    -- SPI definition (SD card interface)
+    alias sd_chip_select           is pin_C1
+    alias sd_chip_select_direction is pin_C1_direction
+
+    -- PWM definition (audio out)
+    CCP1CON = 0b0000_1100
+    alias pwm_l_port_tris_bit         is pin_C2_direction
+    pwm_l_port_tris_bit = OUTPUT; //ccp1 PWM(L) out
+    alias pwm_l_duty_lower_bits       is CCP1CON_DC1B
+    alias pwm_l_duty_upper_bits       is CCPR1L
+
+    CCP2CON = 0b0000_1100
+    alias pwm_r_port_tris_bit         is pin_B3_direction
+    pwm_r_port_tris_bit = OUTPUT; //ccp2 PWM(R) out
+    alias pwm_r_duty_lower_bits       is CCP2CON_DC2B
+    alias pwm_r_duty_upper_bits       is CCPR2L
+
+    -- TEST PORT definition
+    alias test_port           is pin_A1
+    alias test_port_direction is pin_A1_direction
+end if
+
+; out port setting
+; LED and TEST_PORT
+if defined( led_direction ) then
+    led_direction       = OUTPUT
+end if
+if defined( test_port_direction ) then
+    test_port_direction = OUTPUT
+end if
+
+-- UART initialize
+if UART_INFO then
+    if defined(USE_UART2) then
+        if USE_UART2 then
+            include serial_hardware2
+            serial_hw2_init()
+            alias serial_write          is serial_hw2_write
+            alias serial_read           is serial_hw2_read
+            alias serial_data           is serial_hw2_data
+            alias serial_data_available is serial_hw2_data_available
+        end if
+    else
+        include serial_hardware
+        serial_hw_init()
+        alias serial_write          is serial_hw_write
+        alias serial_read           is serial_hw_read
+        alias serial_data           is serial_hw_data
+        alias serial_data_available is serial_hw_data_available
+    end if
+end if
+
+
+-- /******************
+--  GIE_enable
+-- *******************/
+procedure GIE_enable() is
+    pragma inline
+    GIE_bit = 1
+end procedure
+
+-- /******************
+--  GIE_disable
+-- *******************/
+procedure GIE_disable() is
+    pragma inline
+    GIE_bit = 0
+end procedure
+
+-- /******************
+--  PEIE_enable
+-- *******************/
+procedure PEIE_enable() is
+    pragma inline
+    PEIE_bit = 1
+end procedure
+

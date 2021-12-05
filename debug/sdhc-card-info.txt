@@ -1,0 +1,12 @@
+SD ini OK
+
+ Byte/Sector:  512
+ Sec/Cluster: 64
+ Reserved Sector count:  602
+ Num of FAT:   2
+ Sectors of root entries:    0
+ Sector/FAT:   0
+ Hidden sector[HEX]:00002000
+ Top of root dir [sector][HEX]:0000225A
+ Cluster size [sector][HEX]:40
+ Size of root [bytes][HEX]:0000

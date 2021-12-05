@@ -1,0 +1,285 @@
+--  Copyright (C) 2017, avrin, http://mpu.seesaa.net
+--  This program is licensed under BSD license.
+--  Please refer to "LICENSE.txt".
+
+-- for debug
+;const bit DEBUG_INFO1                 = false
+;const bit DEBUG_INFO2                 = false
+
+-- setup the sd card CS pin
+sd_chip_select = high
+sd_chip_select_direction = output
+
+include spi_master_hw         -- includes the spi library
+-- define spi inputs/outputs
+pin_sdi_direction = input    -- spi input
+pin_sdo_direction = output   -- spi output
+pin_sck_direction = output   -- spi clock
+--
+spi_init(SPI_MODE_00,SPI_RATE_FOSC_64) -- init spi, choose mode and speed
+alias spi_master is spi_master_hw
+alias spi_master_exchange is spi_master_hw_exchange
+alias spi_send is spi_master_hw_exchange  ; use : ex. ret = spi_send(0xF0)
+
+------------------------------------------------------------
+-- Initialize SD Card interface
+------------------------------------------------------------
+--
+-- setup SD card library
+alias sd_force_spi_mode is spi_master_hw_set_mode_00 -- always set spi mode to 0,0
+include sd_card_local        -- include the sd card ide hard disk library
+sd_init()                    -- initialize startup settings
+-- Speed up SPI clock to max speed.
+spi_master_hw_set_speed(SPI_RATE_FOSC_4)
+-- However, speed down SPI clock according to the respect ability.
+if defined(SPI_CLOCK_MORE_SLOW) then
+    if SPI_CLOCK_MORE_SLOW then
+        ; pic16f145x
+        ; pic16f1619
+        ; pic16f1705
+        ; pic16f1709
+        ; pic16f1764
+        ; pic16f18325
+
+        ; Set SPI clock = FOSC/( (SSPADD+1)*4 )
+        ; SPI clock = 4MHz , PIC16F1705, PIC16F18325, etc
+        ; SPI clock = 6MHz , PIC16F145x, etc
+        SSPCON1_SSPM = 0b1010;
+        SSPADD = 1 ;
+    end if
+end if
+-- The SPI clock of other PICs is 8MHz.
+
+-- /******************
+--  send_ff
+-- *******************/
+function send_ff() return byte is  ; send 0xFF via SPI interface, optimized 'speed'.
+    pragma inline
+    SSPBUF = 0xFF;
+    ; Wait until send is end
+    while (!BF_bit) loop end loop
+    return   SSPBUF;
+end function
+
+-- /******************
+--  definition of global variables
+-- *******************/
+var byte  gDirEntryBuff[32]
+var byte  lgbBPB_SecPerClus -- E2P(*1)
+var dword gdwBPB_FileSize
+                            var byte _gdwBPB_FileSize[4]    at gdwBPB_FileSize
+var word  lgwBPB_BytesPerSec
+                            var byte _lgwBPB_BytesPerSec[2] at lgwBPB_BytesPerSec
+var word  gwBPB_RootEntCnt
+                            var byte _gwBPB_RootEntCnt[2]  at gwBPB_RootEntCnt
+--
+var dword gdwRootdir_sector -- E2P(*1)
+var dword gdwTargetFileSector
+var word  lgwSize_of_root   -- E2P(*1)
+var bit   lgfFat32 = false
+
+-- /******************
+--  FAT_init
+-- *******************/
+; Refer to ChaN's FAT info page,
+; http://elm-chan.org/docs/fat.html#bpb
+; Thank you, ChaN san.
+
+procedure FAT_init() is
+    pragma inline
+    alias bpbBuff is gDirEntryBuff   ; shares as temporaly data memory
+    --
+    var dword dwBPB_InfoSector at bpbBuff +  0
+                                    var byte _dwBPB_InfoSector[4]  at dwBPB_InfoSector
+    var word  wBPB_RsvdSecCnt  at bpbBuff + 14
+    if HAVE_FAT32 then
+        var byte bBPB_NumFATs  at bpbBuff + 16
+    else
+        const byte bBPB_NumFATs = 2 ; to reduce Flash size
+    end if
+    var dword dwBPB_SecPerFats32 at bpbBuff + 22
+                                    var byte _dwBPB_SecPerFats32[4] at dwBPB_SecPerFats32
+    var dword dwBPB_HiddSec    at bpbBuff + 28
+
+    sd_start_read(0)                     -- read MBR sector
+    sd_read_pulse_byte(454)              -- go to partition info
+    _dwBPB_InfoSector[0] = sd_data_byte  -- get BPB info sector number
+    _dwBPB_InfoSector[1] = sd_data_byte
+    _dwBPB_InfoSector[2] = sd_data_byte
+    _dwBPB_InfoSector[3] = sd_data_byte
+    sd_stop_read()
+
+    sd_start_read( dwBPB_InfoSector )    -- go to BPB info sector
+    var byte bi
+    for 32 using bi loop
+        bpbBuff[bi] = sd_data_byte       -- read BPB info to bpbBuff[]
+    end loop
+
+    ; register BPB info to each variable
+    _lgwBPB_BytesPerSec[0] = bpbBuff[11]
+    _lgwBPB_BytesPerSec[1] = bpbBuff[12]
+
+    lgbBPB_SecPerClus      = bpbBuff[13]
+
+    _gwBPB_RootEntCnt[0]  = bpbBuff[17]
+    _gwBPB_RootEntCnt[1]  = bpbBuff[18]
+
+    ; BPB_FATSz16
+    ;_dwBPB_SecPerFats32[0]= bpbBuff[22] ; for FAT16 ; eliminated for reducing code size
+    ;_dwBPB_SecPerFats32[1]= bpbBuff[23] ; for FAT16 : eliminated for reducing code size
+
+    _dwBPB_SecPerFats32[2]= 0           ; for FAT16
+    _dwBPB_SecPerFats32[3]= 0           ; for FAT16
+
+    if HAVE_FAT32 then
+        if (_dwBPB_SecPerFats32[0] == 0) & (_dwBPB_SecPerFats32[1] == 0 ) then
+            ----- enable FAT32 mode
+            lgfFat32 = true
+                bi = sd_data_byte       ; dummy read
+                bi = sd_data_byte
+                bi = sd_data_byte
+                bi = sd_data_byte
+                ; BPB_FATSz32
+                _dwBPB_SecPerFats32[0]  = sd_data_byte
+                _dwBPB_SecPerFats32[1]  = sd_data_byte
+                _dwBPB_SecPerFats32[2]  = sd_data_byte
+                _dwBPB_SecPerFats32[3]  = sd_data_byte
+        end if
+    end if
+
+    ; /* Root DIR start sector  : (absolute sector) */
+    gdwRootdir_sector = ( dwBPB_SecperFats32 * bBPB_NumFATs )
+                       + wBPB_RsvdSecCnt
+                       + dwBPB_HiddSec
+
+    lgwSize_of_root = gwBPB_RootEntCnt * 32
+    if defined(DEBUG_INFO1) then
+        include debug_info1
+    end if
+    sd_stop_read()
+end procedure
+
+-- /******************
+--  readDirEntry
+-- *******************/
+procedure readDirEntry(word in wDestDirEntryIndex) is
+    var byte i
+    var word wCurrentDirEntryIndex = 0
+
+    sd_start_read( gdwRootdir_sector )
+    while true loop
+        for 32 using i loop ; read one dir entry
+            gDirEntryBuff[i] =  sd_data_byte
+        end loop
+        if wCurrentDirEntryIndex == wDestDirEntryIndex then
+            exit loop
+        end if
+        wCurrentDirEntryIndex = wCurrentDirEntryIndex + 32
+        if !lgfFat32 then
+            if wCurrentDirEntryIndex >= lgwSize_of_root then
+                exit loop
+            end if
+        end if
+    end loop
+    sd_stop_read()
+end procedure
+
+-- /******************
+--  searchNexFile
+-- *******************/
+var word wNextDirEntryIndex = 0  ; initialize
+procedure searchNextFile() is
+    var byte topChar
+    var dword dwTargetClusterNumber
+    var byte _dwTargetClusterNumber[4]  at dwTargetClusterNumber
+
+    if wNextDirEntryIndex != 0 then                    ; if 0 , search first song
+        wNextDirEntryIndex = wNextDirEntryIndex + 32   ; search next song
+    end if
+    while true loop ; start dir entry search
+        while true loop
+            readDirEntry(wNextDirEntryIndex)
+            topChar = gDirEntryBuff[0]
+            if( topChar == 0xE5 )then ; skip deleted entry
+                wNextDirEntryIndex = wNextDirEntryIndex + 32
+            elsif (topChar == 0) then
+                ; dir entry table is end, so return to the top entry
+                wNextDirEntryIndex = 0
+            else
+                exit loop
+            end if
+        end loop
+
+        ; check long file name
+        if (topChar >= 0x42) & (topChar <= 0x54) then
+            if ( gDirEntryBuff[11] & 0x0F ) == 0x0F then ; long file name ID(=0x0F) or not
+                ; this is long file name, so set index to short file name address
+                wNextDirEntryIndex = wNextDirEntryIndex + (word((topChar - 0x40))<<5)
+                readDirEntry(wNextDirEntryIndex)
+            end if
+        end if
+
+        ;get the file extention
+        if   (gDirEntryBuff[8] =="W") & (gDirEntryBuff[9] =="A")
+           & (gDirEntryBuff[10]=="V") & (gDirEntryBuff[11]==" ") then
+            ; gDirEntryBuff[11]=" ": (space) is the mark of archive attribute
+            ; if the file extention matches 'WAV ', exit loop
+            -----------
+            exit loop
+            -----------
+        end if
+        ; for read next entry
+         wNextDirEntryIndex = wNextDirEntryIndex + 32   ; search next song
+    end loop ; end while: dir entry search
+
+    -- print out music file name(short file name) to UART
+    if UART_INFO then
+        var byte fname[12],i
+        for 8 using i loop fname[i] = gDirEntryBuff[i] end loop
+        fname[8]  = "."
+        fname[9]  = gDirEntryBuff[8]
+        fname[10] = gDirEntryBuff[9]
+        fname[11] = gDirEntryBuff[10]
+        if defined(USE_UART2) then
+            if USE_UART2 then
+                print_string(serial_hw2_data,"\n")
+                print_string(serial_hw2_data,fname)
+            end if
+        else
+            print_string(serial_hw_data,"\n")
+            print_string(serial_hw_data,fname)
+        end if
+    end if
+
+    if lgfFat32 then
+        _dwTargetClusterNumber[2] = (gDirEntryBuff[20]);
+        _dwTargetClusterNumber[3] = (gDirEntryBuff[21]);
+    else
+        _dwTargetClusterNumber[2] = 0
+        _dwTargetClusterNumber[3] = 0
+    end if
+        _dwTargetClusterNumber[0] = (gDirEntryBuff[26]);
+        _dwTargetClusterNumber[1] = (gDirEntryBuff[27]);
+
+    _gdwBPB_FileSize[0]  = (gDirEntryBuff[28]);    // file size
+    _gdwBPB_FileSize[1]  = (gDirEntryBuff[29]);
+    _gdwBPB_FileSize[2]  = (gDirEntryBuff[30]);
+    _gdwBPB_FileSize[3]  = (gDirEntryBuff[31]);
+
+    var dword ldwRootdir_sector_size
+        ldwRootdir_sector_size = (32 * dword(gwBPB_RootEntCnt) + lgwBPB_BytesPerSec - 1 ) / lgwBPB_BytesPerSec
+
+    ; calculate start sector of target song file
+        gdwTargetFileSector = gdwRootdir_sector + ldwRootdir_sector_size
+                             + (dwTargetClusterNumber - 2) * lgbBPB_SecPerClus
+
+    if defined(DEBUG_INFO2) then
+        include debug_info2
+    end if
+end procedure
+
+
+
+
+-- (*1) E2P : Candidate that can be assigned to EEPROM to reduce SRAM size.
+

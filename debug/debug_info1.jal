@@ -1,0 +1,42 @@
+
+---- for debug -------
+if UART_INFO then
+    if true then
+        print_string(serial_hw_data,"\n\n Byte/Sector: ")
+        format_word_dec(serial_hw_data,lgwBPB_BytesPerSec,6,0)
+
+        print_string(serial_hw_data,"\n Sec/Cluster:")
+        format_byte_dec(serial_hw_data,lgbBPB_SecPerClus,4,0)
+
+        print_string(serial_hw_data,"\n Reserved Sector count: ")
+        format_word_dec(serial_hw_data,wBPB_RsvdSecCnt,6,0)
+
+        print_string(serial_hw_data,"\n Num of FAT: ")
+        format_byte_dec(serial_hw_data,bBPB_NumFATs,4,0)
+
+        print_string(serial_hw_data,"\n Sectors of root entries: ")
+        format_word_dec(serial_hw_data,gwBPB_RootEntCnt,6,0)
+
+        if lgfFat32 then
+            print_string(serial_hw_data,"\n Sector/FAT(32):")
+        else
+            print_string(serial_hw_data,"\n Sector/FAT(16):")
+        end if
+        format_dword_dec(serial_hw_data,dwBPB_SecPerFats32,6,0)
+
+        print_string(serial_hw_data,"\n Hidden sector[HEX]:")
+        format_dword_hex(serial_hw_data,dwBPB_HiddSec)
+
+        print_string(serial_hw_data,"\n Top of root dir [sector][HEX]:")
+        format_dword_hex(serial_hw_data,gdwRootdir_sector)
+
+        ;print_string(serial_hw_data,"\n Cluster size [sector][HEX]:")
+        ;format_byte_hex(serial_hw_data,bClustrsize)
+
+        print_string(serial_hw_data,"\n Size of root [bytes][HEX]:")
+        format_word_hex(serial_hw_data,lgwSize_of_root)
+    end if
+else
+    _ERROR "UART_INFO bit in main.jal must be true."
+end if
+

@@ -1,0 +1,24 @@
+
+    ---- for debug -------
+    if UART_INFO then
+        if true  then
+            print_string(serial_hw_data,"\n root dir sector size: ")
+            print_dword_hex(serial_hw_data,ldwRootdir_sector_size)
+            if false then
+                var dword dwFatStartSec = wBPB_RsvdSecCnt + dwBPB_HiddSec
+                if lgfFat32 then
+                    print_string(serial_hw_data,"\n File cluster no.[FAT32]: ")
+                else
+                    print_string(serial_hw_data,"\n File cluster no.[FAT16]: ")
+                end if
+                print_dword_hex(serial_hw_data,dwTargetClusterNumber)
+                sd_print_sector_hex(serial_hw_data,32,dwFatStartSec+(dwTargetClusterNumber>>8))
+            end if
+
+            print_string(serial_hw_data,"\n Song file sector: ")
+            sd_print_sector_hex(serial_hw_data,16,gdwTargetFileSector)
+        end if
+    else
+        _ERROR "UART_INFO bit in main.jal must be true."
+    end if
+    ----------------------

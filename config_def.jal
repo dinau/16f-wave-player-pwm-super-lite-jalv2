@@ -1,0 +1,280 @@
+--  Copyright (C) 2017, avrin, http://mpu.seesaa.net
+--  This program is licensed under BSD license.
+--  Please refer to "LICENSE.txt".
+
+--- definitions
+
+-----------------------------------------------------------
+; PIC16F18313
+if target_chip == PIC_16F18313 then
+    pragma target clock    33_000_000       -- oscillator frequency
+    pragma target OSC      OFF
+    pragma target RSTOSC   HFINT32          -- HFINTOSC with 2x PLL (32MHz)
+    pragma target MCLR     INTERNAL         -- external reset
+    pragma target CLKOUTEN DISABLED         -- no clock output
+    pragma target CSWEN    DISABLED
+    pragma target WDT      CONTROL          -- watchdog
+    pragma target DEBUG    DISABLED         -- no debugging
+    pragma target BROWNOUT DISABLED         -- no brownout reset
+    pragma target FCMEN    DISABLED         -- no clock monitoring
+    pragma target LVP      DISABLED         -- no low voltage programming
+    pragma target LPBOREN  DISABLED         -- Low-power BOR enable bit
+    pragma target PPS1WAY  DISABLED
+    pragma target STVR     DISABLED
+    pragma target WRT      DISABLED
+    pragma target CP       DISABLED
+    pragma target CPD      DISABLED
+
+    OSCTUNE_HFTUN = 0x1F ; 6bit: clock up FOSC to 33MHz
+    alias wdtPeriod          is WDTPS_bit
+    wdtPeriod = 0b00000  ; 1msec period
+end if
+; PIC16F18325
+if target_chip == PIC_16F18325 then
+    pragma target clock    33_000_000       -- oscillator frequency
+    pragma target OSC      OFF
+    pragma target RSTOSC   HFINT32          -- HFINTOSC with 2x PLL (32MHz)
+    pragma target MCLR     INTERNAL         -- external reset
+    pragma target CLKOUTEN DISABLED         -- no clock output
+    pragma target CSWEN    DISABLED
+    pragma target WDT      CONTROL          -- watchdog
+    pragma target DEBUG    DISABLED         -- no debugging
+    pragma target BROWNOUT DISABLED         -- no brownout reset
+    pragma target FCMEN    DISABLED         -- no clock monitoring
+    pragma target LVP      DISABLED         -- no low voltage programming
+    pragma target LPBOREN  DISABLED         -- Low-power BOR enable bit
+    pragma target PPS1WAY  DISABLED
+    pragma target STVR     DISABLED
+    pragma target WRT      DISABLED
+    pragma target CP       DISABLED
+    pragma target CPD      DISABLED
+
+    OSCTUNE_HFTUN = 0x1F ; 6bit: clock up FOSC to 33MHz
+    alias wdtPeriod          is WDTPS_bit
+    wdtPeriod = 0b00000  ; 1msec period
+end if
+
+; PIC12F1840
+if target_chip == PIC_12F1840 then
+    pragma target clock    33_000_000       -- oscillator frequency
+    pragma target OSC      INTOSC_NOCLKOUT  -- internal oscillator
+    pragma target MCLR     INTERNAL         -- external reset
+    pragma target PLLEN    ENABLED          -- PLL off
+    pragma target CLKOUTEN DISABLED         -- no clock output
+    pragma target WDT      CONTROL          -- watchdog
+    pragma target BROWNOUT DISABLED         -- no brownout reset
+    pragma target FCMEN    DISABLED         -- no clock monitoring
+    pragma target IESO     DISABLED         -- no int/ext osc switching
+    pragma target LVP      DISABLED         -- no low voltage programming
+    OSCCON_IRCF = 0b1110                    -- 8 MHz
+    OSCTUNE_TUN = 0x1F  ; 6bit: clock up FOSC to 33MHz
+    alias wdtPeriod          is WDTPS_bit
+    wdtPeriod = 0b00000 ; 1msec period
+end if
+
+; PIC16F1454, PIC16F1455, PIC16F1459
+if target_chip == PIC_16F1454 |  target_chip == PIC_16F1455 |  target_chip == PIC_16F1459 then
+    pragma target clock 48_000_000    -- oscillator frequency
+    pragma target OSC      INTOSC_NOCLKOUT
+    pragma target MCLR     INTERNAL   -- MCLR/VPP pin function is digital input
+    pragma target CPUDIV   P1         -- no divide
+    pragma target PLLEN    DISABLED   -- PLL software controlled
+    pragma target PLLMULT  N3X                    -- 3 x PLL is software controlled
+    pragma target USBLSCLK F48MHZ     -- 48MHz USB clock
+    pragma target WDT      CONTROL    -- WDT controlled by the SWDTEN bit in the WDTCON register
+    pragma target CLKOUTEN DISABLED   -- no clock output
+    pragma target BROWNOUT DISABLED   -- no brownout reset
+    pragma target FCMEN    DISABLED   -- no clock monitoring
+    pragma target IESO     DISABLED   -- no int/ext osc switching
+    pragma target LVP      DISABLED   -- no low voltage programming
+    --
+    OSCCON_SCS      = 0b00            -- clock selected by fuse OSC
+    ;OSCCON_IRCF     = 0b1110         -- select 8 MHz
+    OSCCON_IRCF     = 0b1111          -- select 16 MHz
+    OSCCON_SPLLMULT = TRUE            -- select 3 x PLL
+    OSCCON_SPLLEN   = TRUE            -- enable PLL
+    --
+    ;ACTCON_ACTEN    = TRUE             -- active clock tuning
+    --
+    ;OSCTUNE_TUN = 0x3F ; 7bit: clock up FOSC to
+    alias wdtPeriod          is WDTPS_bit
+    wdtPeriod = 0b00000 ; 1msec period
+end if
+
+; PIC16F1619
+if target_chip == PIC_16F1619 then
+    pragma target clock 33_000_000    -- oscillator frequency
+    pragma target OSC      INTOSC_NOCLKOUT
+    pragma target MCLR     INTERNAL   -- MCLR/VPP pin function is digital input
+    pragma target WDT      CONTROL    -- WDT controlled by the SWDTEN bit in the WDTCON register
+    pragma target PLLEN    ENABLED    -- PLL on
+    pragma target PPS1WAY  DISABLED
+    pragma target CLKOUTEN DISABLED   -- no clock output
+    pragma target BROWNOUT DISABLED   -- no brownout reset
+    pragma target FCMEN    DISABLED   -- no clock monitoring
+    pragma target IESO     DISABLED   -- no int/ext osc switching
+    pragma target LVP      DISABLED   -- no low voltage programming
+    OSCCON_IRCF = 0b1110
+    OSCTUNE_TUN = 0x1F  ; 6bit: clock up FOSC to 33MHz
+    alias wdtPeriod          is WDTPS_bit
+    wdtPeriod = 0b00000 ; 1msec period
+end if
+
+; PIC16F1705
+if target_chip == PIC_16F1705 then
+    pragma target clock 33_000_000    -- oscillator frequency
+    pragma target OSC      INTOSC_NOCLKOUT
+    pragma target MCLR     INTERNAL   -- MCLR/VPP pin function is digital input
+    pragma target WDT      CONTROL    -- WDT controlled by the SWDTEN bit in the WDTCON register
+    pragma target PLLEN    ENABLED    -- PLL on
+    pragma target CLKOUTEN DISABLED   -- no clock output
+    pragma target BROWNOUT DISABLED   -- no brownout reset
+    pragma target FCMEN    DISABLED   -- no clock monitoring
+    pragma target IESO     DISABLED   -- no int/ext osc switching
+    pragma target LVP      DISABLED   -- no low voltage programming
+    OSCCON_IRCF = 0b1110
+    OSCTUNE_TUN = 0x1F ; 6bit: clock up FOSC to 33MHz
+    alias wdtPeriod          is WDTPS_bit
+    wdtPeriod = 0b00000 ; 1msec period
+end if
+
+; PIC16F1709
+if target_chip == PIC_16F1709 then
+    pragma target clock 33_000_000    -- oscillator frequency
+    pragma target OSC      INTOSC_NOCLKOUT
+    pragma target MCLR     INTERNAL   -- MCLR/VPP pin function is digital input
+    pragma target WDT      CONTROL    -- WDT controlled by the SWDTEN bit in the WDTCON register
+    pragma target PLLEN    ENABLED    -- PLL on
+    pragma target CLKOUTEN DISABLED   -- no clock output
+    pragma target BROWNOUT DISABLED   -- no brownout reset
+    pragma target FCMEN    DISABLED   -- no clock monitoring
+    pragma target IESO     DISABLED   -- no int/ext osc switching
+    pragma target LVP      DISABLED   -- no low voltage programming
+    OSCCON_IRCF = 0b1110
+    OSCTUNE_TUN = 0x1F  ; 6bit: clock up FOSC to 33MHz
+    alias wdtPeriod          is WDTPS_bit
+    wdtPeriod = 0b00000 ; 1msec period
+end if
+
+; PIC16F1764
+if target_chip == PIC_16F1764 then
+    pragma target clock 33_000_000    -- oscillator frequency
+    pragma target OSC      INTOSC_NOCLKOUT
+    pragma target MCLR     INTERNAL   -- MCLR/VPP pin function is digital input
+    pragma target WDT      CONTROL    -- WDT controlled by the SWDTEN bit in the WDTCON register
+    pragma target PLLEN    ENABLED    -- PLL on
+    pragma target CLKOUTEN DISABLED   -- no clock output
+    pragma target BROWNOUT DISABLED   -- no brownout reset
+    pragma target FCMEN    DISABLED   -- no clock monitoring
+    pragma target IESO     DISABLED   -- no int/ext osc switching
+    pragma target LVP      DISABLED   -- no low voltage programming
+    OSCCON_IRCF = 0b1110
+    OSCTUNE_TUN = 0x1F  ; 6bit: clock up FOSC to 33MHz
+    alias wdtPeriod          is WDTPS_bit
+    wdtPeriod = 0b00000 ; 1msec period
+end if
+
+; PIC16F1825 / PIC16F1827 / PIC16F1829
+if target_chip == PIC_16F1825 | target_chip == PIC_16F1827 | target_chip == PIC_16F1829 then
+    pragma target clock 33_000_000    -- oscillator frequency
+    pragma target OSC      INTOSC_NOCLKOUT
+    pragma target MCLR     INTERNAL   -- MCLR/VPP pin function is digital input
+    pragma target WDT      CONTROL    -- WDT controlled by the SWDTEN bit in the WDTCON register
+    pragma target PLLEN    ENABLED    -- PLL on
+    pragma target CLKOUTEN DISABLED   -- no clock output
+    pragma target BROWNOUT DISABLED   -- no brownout reset
+    pragma target FCMEN    DISABLED   -- no clock monitoring
+    pragma target IESO     DISABLED   -- no int/ext osc switching
+    pragma target LVP      DISABLED   -- no low voltage programming
+    OSCCON_IRCF = 0b1110
+    OSCTUNE_TUN = 0x1F  ; 6bit: clock up FOSC to 33MHz
+    alias wdtPeriod          is WDTPS_bit
+    wdtPeriod = 0b00000 ; 1msec period
+end if
+
+; PIC16F88
+if target_chip == PIC_16F88 then
+    pragma target clock    19_660_800     -- oscillator frequency
+    ;pragma target clock    20_000_000    -- oscillator frequency
+    pragma target OSC      HS
+    pragma target CCP1MUX  pin_B3         -- ccp1 pin on B3
+    pragma target MCLR     INTERNAL
+    pragma target WDT      DISABLED       -- watchdog
+    pragma target DEBUG    DISABLED       -- no debugging
+    pragma target BROWNOUT DISABLED       -- no brownout reset
+    pragma target FCMEN    DISABLED       -- no clock monitoring
+    pragma target IESO     DISABLED       -- no int/ext osc switching
+    pragma target LVP      DISABLED       -- no low voltage programming
+    OSCTUNE_TUN = 0x0  ; 6bit: clock up FOSC to MHz
+    alias wdtPeriod          is WDTPS_bit
+    wdtPeriod = 0b00000 ; 1msec period
+end if
+
+; PIC16F1938
+if target_chip == PIC_16F1938 then
+    pragma target clock 33_000_000         -- oscillator frequency
+    pragma target OSC      INTOSC_NOCLKOUT --
+    pragma target MCLR     INTERNAL        -- PORT
+    pragma target WDT      CONTROL         -- watchdog
+    pragma target PLLEN    ENABLED         -- PLL on
+    pragma target CLKOUTEN DISABLED        -- no clock output
+    pragma target BROWNOUT DISABLED        -- no brownout reset
+    pragma target FCMEN    DISABLED        -- no clock monitoring
+    pragma target IESO     DISABLED        -- no int/ext osc switching
+    pragma target LVP      DISABLED        -- no low voltage programming
+    OSCCON_IRCF = 0b1110
+    OSCTUNE_TUN = 0x0F  ; 5bit,clock up FOSC to 33MHz
+    alias wdtPeriod          is WDTPS_bit
+    wdtPeriod = 0b00000 ; 1 msec period
+end if
+
+; PIC18F14K50
+if target_chip == PIC_18F14K50 | target_chip == PIC_18F13K50 then
+    pragma target clock 33_000_000              -- oscillator frequency
+    pragma target CPUDIV        P1              -- CLOCK_DIVIDE
+    pragma target USBDIV        P1              -- USB_CLOCK_COMES_DIRECTLY_FROM_THE_OSC1_OSC2_OSCILLATOR_BLOCK_NO_DIVIDE
+    pragma target OSC           INTOSC_CLKOUT
+    pragma target PLLEN         enabled         -- OSCILLATOR_MULTIPLIED_BY_4
+    pragma target WDT           CONTROL         -- WDT controlled by the SWDTEN bit in the WDTCON register
+    pragma target MCLR          INTERNAL        -- external reset
+    pragma target WDTPS         P16             -- 64msec watch dog saler setting
+    pragma target PCLKEN        DISABLED
+
+    pragma target FCMEN         DISABLED
+    pragma target IESO          DISABLED
+    pragma target PWRTE         DISABLED        -- power up timer
+    pragma target BROWNOUT      DISABLED        -- no brownout detection
+    pragma target VOLTAGE       V30             -- brown out voltage
+    pragma target LVP           DISABLED        -- no low-voltage programming
+    pragma target XINST         DISABLED        -- extended instruction set
+    pragma target DEBUG         DISABLED        -- background debugging
+    pragma target CP0           DISABLED        -- code block 0 not protected
+    pragma target CP1           DISABLED        -- code block 1 not protected
+    pragma target CPB           DISABLED        -- bootblock code not write protected
+    pragma target WRT0          DISABLED        -- table writeblock 0 not protected
+    pragma target WRT1          DISABLED        -- table write block 1 not protected
+    pragma target WRTB          DISABLED        -- bootblock not write protected
+    pragma target WRTC          DISABLED        -- config not write protected
+    pragma target EBTR0         DISABLED        -- table read block 0 not protected
+    pragma target EBTR1         DISABLED        -- table read block 1 not protected
+    pragma target EBTRB         DISABLED        -- boot block not protected
+    pragma target HFOFST        ENABLED         -- THE_SYSTEM_CLOCK_IS_HELD_OFF_UNTIL_THE_HFINTOSC_IS_STABLE
+    OSCCON_SCS  = 0b00 ;
+    OSCCON_IRCF = 0b110;
+    OSCTUNE_TUN = 0x1F ; 6bit: clock up FOSC to 33MHz
+end if
+
+; PIC18F26J50
+if target_chip == PIC_18F26J50 then
+    pragma target clock 48_000_000                   -- oscillator frequency
+    pragma target OSC      INTOSC_NOCLKOUT_PLL       -- INT osc + PLL
+    pragma target PLLDIV   P2                        -- 8 MHz -> 4 MHz
+    pragma target CPUDIV   P1                        -- Fosc divisor
+    pragma target WDT      CONTROL                   -- watchdog
+    pragma target XINST    DISABLED                  -- do not use extended instructionset
+    pragma target DEBUG    DISABLED                  -- no debugging
+    pragma target BROWNOUT DISABLED                  -- no brownout reset
+    pragma target FCMEN    DISABLED                  -- no clock monitoring
+    pragma target IESO     DISABLED                  -- no int/ext osc switching
+    OSCTUNE_PLLEN = TRUE                             -- PLL
+end if

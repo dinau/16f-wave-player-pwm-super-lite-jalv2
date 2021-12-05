@@ -1,0 +1,59 @@
+--  Copyright (C) 2017, avrin, http://mpu.seesaa.net
+--  This program is licensed under BSD license.
+--  Please refer to "LICENSE.txt".
+
+---- Select device file using device_select.jal file ------
+include device_select
+-----------------------------------------------------------
+
+----------------------
+-- Selectable Options
+----------------------
+
+-- Select FAT32/FAT16 or FAT16 only
+const bit HAVE_FAT32                  = true  ; false: FAT16 only, true: FAT16 and FAT32 support
+
+-- debug purpose
+const bit UART_INFO                   = false
+const bit TEST_PORT_ENABLE            = false
+const word CUT_LAST_TAG_NOISE         = 30_000 ; about 30Kbytes
+--- end option setting
+
+---- sub modules
+include register_def
+include config_def
+
+-- set all pins to digital I/O
+enable_digital_io()
+
+_usec_delay(100_000)        -- 100msec Wait until Vdd become stable.
+
+---- jallibs
+include format
+include print
+---- sub modules
+include port_def
+include fat_lib
+include timers
+include pwm_lib
+include wave_player_main
+
+-- /******************
+--  Main program start
+-- *******************/
+    init_tickTimer()
+    pwm_init()
+    -------------------
+
+    -- enable interrupt
+    GIE_enable()
+    PEIE_enable()
+    -------------------
+
+    FAT_init()
+
+    wave_player_main(); forever loop
+
+-- end program
+
+

@@ -1,0 +1,40 @@
+--  Copyright (C) 2017, avrin, http://mpu.seesaa.net
+--  This program is licensed under BSD license.
+--  Please refer to "LICENSE.txt".
+
+; not using at this moment
+
+    if HAVE_POWER_OFF_MODE then
+        if btn_power_off_on then
+            btn_power_off_on = false
+            GIE_disable()
+            fPlaying = false
+            if defined( pwm_r_duty) then
+                pwm_r_duty(0)
+            end if
+            pwm_l_duty(0)
+            led = 0
+            ; wait released btn
+            while btn_bit_now == false loop end loop
+            for 0x8000 loop end loop ; 61msec
+            while btn_bit_now == false loop end loop
+            fwdtCtrl = true; enable Watchdog
+            while true loop
+                asm sleep ; it will wake up by watchdog trigger every 64msec
+                ; Here,wake up !
+                asm nop ;
+                ; if btn is low, go to normal mode
+                if btn_bit_now == false then
+                    fWdtCtrl = false; disable Watch dog
+                    exit loop
+                end if
+            end loop
+            led = 1
+            ; wait released btn
+            while btn_bit_now == false loop end loop
+            btn_pause_on = false ; release pause mode
+            fPlaying = true      ; Play music
+            GIE_enable()
+        end if
+    end if
+

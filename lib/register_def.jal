@@ -1,0 +1,32 @@
+--  Copyright (C) 2017, avrin, http://mpu.seesaa.net
+--  This program is licensed under BSD license.
+--  Please refer to "LICENSE.txt".
+
+alias GIE_bit            is INTCON_GIE
+alias PEIE_bit           is INTCON_PEIE
+;alias T2CKPS0_bit       is T2CON_T2CKPS0
+alias TMR2ON_bit         is T2CON_TMR2ON
+alias BF_bit             is SSPSTAT_BF
+alias TMR2IE_bit         is PIE1_TMR2IE
+alias TMR2IF_bit         is PIR1_TMR2IF
+
+--------- Watchdog definition
+if defined(WDTCON0_SEN) then
+    alias SWDTEN_bit    is WDTCON0_SEN
+else
+    alias SWDTEN_bit    is WDTCON_SWDTEN
+end if
+
+alias fWdtCtrl           is SWDTEN_bit
+
+if  target_chip != PIC_18F14K50
+  & target_chip != PIC_18F13K50
+  & target_chip != PIC_18F26J50 then
+
+    if defined(WDTCON0_WDTPS) then
+        alias WDTPS_bit is WDTCON0_WDTPS
+    else
+        alias WDTPS_bit is WDTCON_WDTPS
+    end if
+end if
+
