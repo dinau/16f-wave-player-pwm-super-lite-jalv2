@@ -5,10 +5,11 @@
 #--  Please refer to "LICENSE.txt".
 
 
+# 2021/12 v9.1 by avrin
 # 2019/02 v8.8 by avrin
 # 2016/12 v8.6 by avrin
 
-rev_num=8.8
+rev_num=9.1
 date=`date +%Y-%m`
 rev=v${rev_num}-${date}
 log=00build.log
