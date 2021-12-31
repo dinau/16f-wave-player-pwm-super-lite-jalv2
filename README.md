@@ -37,7 +37,7 @@ I came across this page [WAVE PLAYER FOR PIC16F877A.!](https://libstock.mikroe.c
 ### SD Card connection:
 * Pin side
     ```
-     --------------\
+     --------------.
              9     = \    DAT2/NC
                  1 ===|   CS/DAT3    [CS]
                  2 ===|   CMD/DI     [DI]
@@ -47,22 +47,22 @@ I came across this page [WAVE PLAYER FOR PIC16F877A.!](https://libstock.mikroe.c
                  6 ===|   VSS2
                  7 ===|   DO/DAT0    [DO]
              8       =|   DAT1/IRQ
-     -----------------
+     -----------------'
     ```
  * Logo side
     ```
-                                             Arduino      NUCLEO-F411       NUCLEO-F030R8
-     -----------------
+                                             Arduino  NUCLEO-F411  NUCLEO-F030R8
+     -----------------.
              8       =|   DAT1/IRQ
-                 7 ===|   DO/DAT0    [DO]     D12           D12/PA_6           D12/PA_6
+                 7 ===|   DO/DAT0    [DO]     D12       D12/PA_6      D12/PA_6
                  6 ===|   VSS2
-     Top         5 ===|   CLK        [CLK]    D13           D13/PA_5           D13/PA_5
+     Top         5 ===|   CLK        [CLK]    D13       D13/PA_5      D13/PA_5
      View        4 ===|   VDD
                  3 ===|   VSS1
-                 2 ===|   CMD/DI     [DI]     D11           D11/PA_7           D11/PA_7
-                 1 ===|   CS/DAT3    [CS]     D8            D10/PB_6           D10/PB_6
+                 2 ===|   CMD/DI     [DI]     D11       D11/PA_7      D11/PA_7
+                 1 ===|   CS/DAT3    [CS]     D8        D10/PB_6      D10/PB_6
              9     = /    DAT2/NC
-     --------------/
+     --------------'
     ```
 
 ### Pickit2/3 pin map
@@ -70,7 +70,7 @@ I came across this page [WAVE PLAYER FOR PIC16F877A.!](https://libstock.mikroe.c
  ------------------
  Pickit2/3 pin map
  ------------------
- -----------
+ ----------.
             \
              \
           ==> |1 Vpp/MCLR
@@ -81,7 +81,7 @@ I came across this page [WAVE PLAYER FOR PIC16F877A.!](https://libstock.mikroe.c
               |6 Aux N.C.
               /
              /
- ------------
+ -----------'
 ```
 
 ### Download:
