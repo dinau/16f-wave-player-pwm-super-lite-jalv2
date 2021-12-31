@@ -21,7 +21,7 @@
 
 -- /* SD card pin
 -- Pin side
--- --------------\
+-- --------------.
 --         9     = \    DAT2/NC
 --             1 ===|   CS/DAT3    [CS]
 --             2 ===|   CMD/DI     [DI]
@@ -31,27 +31,27 @@
 --             6 ===|   VSS2
 --             7 ===|   DO/DAT0    [DO]
 --         8       =|   DAT1/IRQ
--- -----------------
+-- -----------------'
 --
---                                         Arduino      NUCLEO-F411       NUCLEO-F030R8
+--                                         Arduino  NUCLEO-F411  NUCLEO-F030R8
 -- Logo side
--- -----------------
+-- -----------------.
 --         8       =|   DAT1/IRQ
---             7 ===|   DO/DAT0    [DO]     D12           D12/PA_6           D5/PB_4
+--             7 ===|   DO/DAT0    [DO]     D12       D12/PA_6      D5/PB_4
 --             6 ===|   VSS2
--- Top         5 ===|   CLK        [CLK]    D13           D13/PA_5           D3/PB_3
+-- Top         5 ===|   CLK        [CLK]    D13       D13/PA_5      D3/PB_3
 -- View        4 ===|   VDD
 --             3 ===|   VSS1
---             2 ===|   CMD/DI     [DI]     D11           D11/PA_7           D4/PB_5
---             1 ===|   CS/DAT3    [CS]     D8            D10/PB_6           D10/PB_6
+--             2 ===|   CMD/DI     [DI]     D11       D11/PA_7      D4/PB_5
+--             1 ===|   CS/DAT3    [CS]     D8        D10/PB_6      D10/PB_6
 --         9     = /    DAT2/NC
--- --------------/
+--  -------------'
 -- */
 
 -- ------------------
 -- Pickit3 pin map
 -- ------------------
--- -----------
+-- ----------.
 --            \
 --             \
 --          --> |1 Vpp/MCLR
@@ -62,20 +62,20 @@
 --              |6 Aux N.C.
 --              /
 --             /
--- ------------
+-- -----------'
 --
 -- /*                   PIC12F1840   4KW/256B
 --                      PIC16F18313  2KW/256B
---                       ---__----
+--                      .----_----.
 --           3.3V--- VDD|1       8|VSS --- GND
 --      PWM CCP1 --- RA5|2       7|RA0 --- [PGD] - SPI SDO
 --         SD CS --- RA4|3       6|RA1 --- [PGC] - SPI SCK
 --    SW --- [/MCLR]/RA3|4       5|RA2 --- SPI SDI
---                       ---------
+--                      `---------'
 -- */
 -- /*                   PIC16F1454 8KW/1024B
 --                      PIC16F1455 8KW/1024B
---                       ---__----
+--                      .----_----.
 --           3.3V--- VDD|1      14|VSS --- GND
 --           LED --- RA5|2      13|RA0 --- (Input only port)
 --         SD CS --- RA4|3      12|RA1 --- UART RX
@@ -83,13 +83,13 @@
 --   PWM(L) PWM1 --- RC5|5      10|RC0 --- [PGD] SPI SCK    --- Pickit3
 --     (UART TX) --- RC4|6       9|RC1 --- [PGC] SPI SDI    --- Needs 47K ohm external pull-up
 --   PWM(R) PWM2 --- RC3|7       8|RC2 --- SPI SDO
---                       ---------
+--                      `---------'
 -- */
 -- /*                   PIC16F1705  8KW/1024B
 --                      PIC16F1764  4KW/ 512B [CCP2 -> PWM3]
 --                      PIC16F1825  8KW/1024B
 --                      PIC16F18325 8KW/1024B
---                       ---__----
+--                      .----_----.
 --           3.3V--- VDD|1      14|VSS --- GND
 --           LED --- RA5|2      13|RA0 --- [PGD]
 --         SD CS --- RA4|3      12|RA1 --- [PGC]
@@ -97,10 +97,10 @@
 --   PWM(L) CPP1 --- RC5|5      10|RC0 --- SPI SCK
 --     (UART TX) --- RC4|6       9|RC1 --- SPI SDI
 --   PWM(R) CCP2 --- RC3|7       8|RC2 --- SPI SDO
---                       ---------
+--                      `---------'
 -- */
 -- /*          Mono     PIC16F1825 debug test mode using UART  8KW/1024B
---                       ---__----
+--                      .----_----.
 --           3.3V--- VDD|1      14|VSS --- GND
 --           LED --- RA5|2      13|RA0 --- [PGD]
 --         SD CS --- RA4|3      12|RA1 --- [PGC]
@@ -108,10 +108,10 @@
 --       UART RX --- RC5|5      10|RC0 --- SPI SCK
 --       UART TX --- RC4|6       9|RC1 --- SPI SDI
 --   PWM(R) CCP2 --- RC3|7       8|RC2 --- SPI SDO
---                       ---------
+--                      `---------'
 -- */
 --  /*                  PIC16F1827  4KW/384B
---                       ----_----
+--                      .----_----.
 --     TEST PORT --- RA2|1      18|RA1
 --   PWM(L) CCP3 --- RA3|2      17|RA0
 --   PWM(R) CCP4 --- RA4|3      16|RA7
@@ -121,7 +121,7 @@
 --      SPI SDI1 --- RB1|7      12|RB6 --- [CSPCLK]
 --      UART_RX ---- RB2|8      11|RB5 --- UART_TX
 --         SD CS --- RB3|9      10|RB4 --- SPI SCK1
---                       ---------
+--                      `---------'
 --             Playing:  26.2mA   consumption
 --             Sleeping: 22.0mA
 --  */
@@ -129,7 +129,7 @@
                     PIC16F88  4KW/384B
                     Probably dose not work.
                     No tested, no support,
---                       ----_----
+--                      .----_----.
 --     TEST PORT --- RA2|1      18|RA1
 --                   RA3|2      17|RA0
 --         SD CS --- RA4|3      16|RA7 --- OSC1
@@ -139,11 +139,11 @@
 --       SPI SDI --- RB1|7      12|RB6 --- [PGC]
 --       SPI SDO --- RB2|8      11|RB5 --- UART TX
 --  PWM out CCP1 --- RB3|9      10|RB4 --- SPI SCK
---                       ---------
+--                      `---------'
 --  */
 -- /*
 --                      PIC16F1459  8KW/1024B
---                       ---__----
+--                      .----_----.
 --           3.3V--- VDD|1      20|VSS --- GND
 --               --- RA5|2      19|RA0 ---
 --               --- RA4|3      18|RA1 ---
@@ -154,12 +154,12 @@
 --   PWM(R) PWM2 --- RC6|8      13|RB4 --- SPI SDI
 --       SPI SDO --- RC7|9      12|RB5 --- UART RX
 --       UART TX --- RB7|10     11|RB6 --- SPI SCK
---                       ---------
+--                      `---------'
 -- */
 -- /*                   PIC16F1619  8KW/1024B  [PWM3,PWM4] <- [CCP1,CCP2]
 --                      PIC16F1709  8KW/1024B
 --                      PIC16F1829  8KW/1024B
---                       ---__----
+--                      .----_----.
 --           3.3V--- VDD|1      20|VSS --- GND
 --               --- RA5|2      19|RA0 --- [PGD]
 --               --- RA4|3      18|RA1 --- [PGC]
@@ -170,10 +170,10 @@
 --        SD CS  --- RC6|8      13|RB4 --- SPI SDI
 --       SPI SDO --- RC7|9      12|RB5 --- UART RX
 --       UART TX --- RB7|10     11|RB6 --- SPI SCK
---                       ---------
+--                       `--------'
 -- */
 -- /*                   PIC18F14K50  8KW/768B
---                       ---__----
+--                      .----_----.
 --           3.3V--- VDD|1      20|VSS --- GND
 --        OSC IN --- RA5|2      19|RA0 --- [PGD]
 --        OSC OUT--- RA4|3      18|RA1 --- [PGC]
@@ -184,10 +184,10 @@
 --        SD CS  --- RC6|8      13|RB4 --- SPI SDI
 --       SPI SDO --- RC7|9      12|RB5 --- UART RX
 --       UART TX --- RB7|10     11|RB6 --- SPI SCK
---                       ---------
+--                      `---------'
 -- */
 -- /*                   PIC16F1938   16KW/1024B
---                       ---__----
+--                      .----_----.
 --  btn SW --- /MCLR RE3|1      28|RB7 --- [ISPD]
 --           LED --- RA0|2      27|RB6 --- [ISPG]
 --     TEST PORT --- RA1|3      26|RB5
@@ -202,10 +202,10 @@
 --        SD CS  --- RC1|12     17|RC6 --- UART TX
 --   PWM(R) CCP1 --- RC2|13     16|RC5 --- SPI SDO
 --       SPI SCK --- RC3|14     15|RC4 --- SPI SDI
---                       ---------
+--                      `---------'
 -- */
 -- /*                   PIC18F26J50   32KW/3776B
---                           ---__----
+--                          .----_----.
 --  Pull-up 10kOhm --- /MCLR|1      28|RB7 --- [ISPD]
 --               LED --- RA0|2      27|RB6 --- [ISPG]
 --         TEST PORT --- RA1|3      26|RB5 --- SPI SDI1
@@ -220,7 +220,7 @@
 --            SD CS  --- RC1|12     17|RC6/RP17 --- UART TX2
 --   PWM(L) CCP1 ---RP13/RC2|13     16|RC5 --- D+/VP
 --                      Vusb|14     15|RC4 --- D-/VP
---                           ---------
+--                           `--------'
 -- */
 --
 --        10pin          8pin
