@@ -1,22 +1,53 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [PWM Wave Player Super Lite for PIC16F1xxx with Jalv2](#pwm-wave-player-super-lite-for-pic16f1xxx-with-jalv2)
+  - [Specification:](#specification)
+  - [Youtube demo movie:](#youtube-demo-movie)
+  - [Schematic:](#schematic)
+  - [Output filter:](#output-filter)
+  - [SD Card connection:](#sd-card-connection)
+  - [Pickit2/3 pin map](#pickit23-pin-map)
+  - [Download:](#download)
+  - [Write hex file to flash:](#write-hex-file-to-flash)
+  - [Converting to fs=44.1kHz,PCM 8bit stereo or mono data:](#converting-to-fs441khzpcm-8bit-stereo-or-mono-data)
+  - [Supported SD card:](#supported-sd-card)
+  - [References:](#references)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ## PWM Wave Player Super Lite for PIC16F1xxx with [Jalv2](http://www.justanotherlanguage.org/downloads)
-I came across this page [WAVE PLAYER FOR PIC16F877A.!](https://libstock.mikroe.com/projects/view/120/wave-player-for-pic16f877a) and had a impression for very small code size about 1700 words. But I struggled with the program that aimed to old and paticular MMC FAT16 format in the now, so I rewrite it using Jalv2(Jal) language in order to work with SDSC/SDHC SD card (FAT16/FAT32)from 2GB to 32GB.
+ I came across this page [WAVE PLAYER FOR PIC16F877A.!](https://libstock.mikroe.com/projects/view/120/wave-player-for-pic16f877a) and  
+had an impression for very small code size about 1700 words.  
+But I struggled with the program that aimed to old and particular MMC FAT16 format  
+in the now, so I'd rewritten it using Jalv2(Jal) language  
+in order to work with SDSC(FAT16) / SDHC(FAT32) SD card from 2GB to 32GB.
 
 ### Specification:
-1. Supported PICs are 8bit Enhanced Midrange PIC16F1xxx series and PIC18F26J50 etc, as follows:
+1. Supported PICs are 8bit Enhanced Midrange PIC16F1xxx series  
+and PIC18F26J50 etc, as follows:
     - **Programmed by PicKit2/3:**  
-        * PIC12F1840    
-        * PIC16F1455,PIC16F1459  
-        * PIC16F1705,PIC16F1709  
-        * PIC16F1825,PIC16F1827,PIC16F1829  
-        * PIC16F1938  
-        * PIC18F14K50  
-        * PIC18F26J50
+
+        | PIC12F1840  |            |            |
+        |-------------|------------|------------|
+        | PIC16F1455  | PIC16F1459 |            |
+        | PIC16F1705  | PIC16F1709 |            |
+        | PIC16F1825  | PIC16F1827 | PIC16F1829 |
+        | PIC16F1938  |            |            |
+        | PIC18F14K50 |            |            |
+        | PIC18F26J50 |            |            |
+
     - **Programmed by PicKit3 or later:**  
-        * PIC16F1619  
-        * PIC16F1764  
-        * PIC16F18313  
-        * PIC16F18325
-1. PCM wave music file:  Select 8bit stereo or mono. fs=44.1KHz fixed.
+
+        | PIC16F1619  |
+        |-------------|
+        | PIC16F1764  |
+        | PIC16F18313 |
+        | PIC16F18325 |
+
+1. PCM wave music file  
+Select 8bit stereo or mono.  
+fs (Sample frequency) = 44.1KHz.
 1. Auto play after power on.
 1. One push switch controls **Play**,**Pause** and **Next song** operation.
 1. Code size is about 1700 words.
