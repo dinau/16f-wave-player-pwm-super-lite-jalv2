@@ -39,6 +39,12 @@ other_pic=(
 '18F13K50'
 )
 
+# https://ytyaru.hatenablog.com/entry/2022/02/18/000000
+isExistCmd() { type "$1" > /dev/null 2>&1; }
+
+isRuby=false
+isExistCmd ruby && isRuby=true
+
 
 echo "" > ${log}
 # rm -fr hex
@@ -50,5 +56,9 @@ do
     echo \($i\) make device=${pic_name[$i]}
 
     mv sd-wav-player-${pic_name[$i]}.hex hex/sd-wav-player-${pic_name[$i]}-${rev}.hex
+
+    if [ ${isRuby} ]; then
+      ruby hexdiff.rb hex ${pic_name[$i]}
+    fi
 done
 
