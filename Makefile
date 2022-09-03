@@ -29,43 +29,43 @@ rm           = rm -fr
 # for windows
 #rm          = del /s /q /f
 
+main_name  = main
+main_file  = $(main_name).jal
+target     = sd-wav-player-$(device)
+jal_root   = d:/0pic-data/jalv2-data
 
-main_name    = main
-main_file    = $(main_name).jal
-target       = sd-wav-player-$(device)
-jal_root     = d:/0pic-data/jalv2-data
+jal_sys    = $(jal_root)/jallib_full-1.6.0
+#jal_sys    = $(jal_root)/jallib-1.7.0
 
-jal_sys         = $(jal_root)/jallib_full-1.6.0
+jal_cc     = $(jal_sys)/Compiler/jalv2.exe
+jallib_dir = $(jal_sys)/lib
 
-jal_cc       = $(jal_sys)/Compiler/jalv2.exe
-jallib_dir   = $(jal_sys)/lib
-
-#asm_list    = -asm $(target).asm  #-codfile $(target).cod
-#noreuse      = -no-variable-reuse
-fastmath    = -fastmath
+#asm_list  = -asm $(target).asm  #-codfile $(target).cod
+#noreuse   = -no-variable-reuse
+fastmath   = -fastmath
 jal_flags += $(incs)
 jal_flags += -temp-reduce
-jal_flags    += $(noreuse)
-jal_flags    += $(asm_list)
-jal_flags    += $(fastmath)
+jal_flags += $(noreuse)
+jal_flags += $(asm_list)
+jal_flags += $(fastmath)
 
-incs         = -s $(jallib_dir) -s lib -s debug
-depends      = config_def.jal            \
-               port_def.jal              \
-               wave_player_main.jal      \
-                                         \
-               lib/fat_lib.jal           \
-               lib/power_off_mode.jal    \
-               lib/pwm_lib.jal           \
-               lib/register_def.jal      \
-               lib/sd_card_local.jal     \
-               lib/timers.jal            \
-                                         \
-               debug/debug_info1.jal     \
-               debug/debug_info2.jal     \
-               debug/debug_tool.jal      \
-                                         \
-               Makefile
+incs      = -s $(jallib_dir) -s lib -s debug
+depends   = config_def.jal            \
+            port_def.jal              \
+            wave_player_main.jal      \
+                                      \
+            lib/fat_lib.jal           \
+            lib/power_off_mode.jal    \
+            lib/pwm_lib.jal           \
+            lib/register_def.jal      \
+            lib/sd_card_local.jal     \
+            lib/timers.jal            \
+                                      \
+            debug/debug_info1.jal     \
+            debug/debug_info2.jal     \
+            debug/debug_tool.jal      \
+                                      \
+            Makefile
 
 all: device_sel $(target).hex
 
